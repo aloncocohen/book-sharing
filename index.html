@@ -362,26 +362,93 @@ function esc(s){return (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace
 function doSearch(){
   const q=(document.getElementById('search-input').value||'').trim().toLowerCase();
   const el=document.getElementById('search-results');
-  if(!q){el.innerHTML='<div class="empty-state">🔍 הקלד שם ספר כדי לחפש</div>';return;}
-  const results=[];
+  if(!q){el.innerHTML='<div class="empty-state">🔍 הקלד שם ספר או שם משתמש לחיפוש</div>';return;}
+
+  const profileMatches=allProfiles.filter(p=>
+    p.id!==currentUser.id &&
+    (p.name.toLowerCase().includes(q)||p.id.toLowerCase().includes(q))
+  );
+
+  const bookResults=[];
   for(const prof of allProfiles){
     if(prof.id===currentUser.id) continue;
     const books=getBooksOf(prof.id).filter(b=>b.toLowerCase().includes(q));
-    if(books.length) results.push({prof,books});
+    if(books.length) bookResults.push({prof,books});
   }
-  if(!results.length){el.innerHTML='<div class="empty-state">😕 לא נמצאו ספרים עם השם הזה</div>';return;}
-  el.innerHTML=results.map(({prof,books})=>{
-    const c=gc(prof.id);
-    const av=prof.name.split(' ').map(w=>w[0]).join('').slice(0,2);
-    return`<div class="card">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-        <div class="avatar" style="background:${c.bg};color:${c.text};border:2px solid ${c.border}">${av}</div>
-        <div><div style="font-weight:700;font-size:15px">${prof.name}</div><div style="font-size:12px;color:#888">📍 ${prof.address}</div></div>
+
+  if(!profileMatches.length&&!bookResults.length){
+    el.innerHTML='<div class="empty-state">😕 לא נמצאו תוצאות</div>';return;
+  }
+
+  let html='';
+
+  if(profileMatches.length){
+    html+=`<div style="font-size:12px;color:#888;font-weight:500;margin-bottom:8px">👤 משתמשים (${profileMatches.length})</div>`;
+    html+=profileMatches.map(prof=>{
+      const c=gc(prof.id);
+      const av=prof.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+      const books=getBooksOf(prof.id);
+      return`<div class="card" style="cursor:pointer" onclick="openProfileModal('${esc(prof.id)}')">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="avatar" style="background:${c.bg};color:${c.text};border:2px solid ${c.border}">${av}</div>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:15px">${prof.name}</div>
+            <div style="font-size:12px;color:#888">📍 ${prof.address} • 📚 ${books.length} ספרים</div>
+            ${prof.bio?`<div style="font-size:12px;color:#aaa;margin-top:2px">${prof.bio.slice(0,60)}${prof.bio.length>60?'...':''}</div>`:''}
+          </div>
+          <span style="color:#ccc;font-size:20px">›</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  if(bookResults.length){
+    if(profileMatches.length) html+=`<div style="font-size:12px;color:#888;font-weight:500;margin:12px 0 8px">📚 ספרים (${bookResults.length} תוצאות)</div>`;
+    html+=bookResults.map(({prof,books})=>{
+      const c=gc(prof.id);
+      const av=prof.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+      return`<div class="card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;cursor:pointer" onclick="openProfileModal('${esc(prof.id)}')">
+          <div class="avatar" style="background:${c.bg};color:${c.text};border:2px solid ${c.border}">${av}</div>
+          <div style="flex:1"><div style="font-weight:700;font-size:15px">${prof.name}</div><div style="font-size:12px;color:#888">📍 ${prof.address}</div></div>
+          <span style="color:#ccc;font-size:20px">›</span>
+        </div>
+        <div class="section-title">ספרים תואמים (${books.length})</div>
+        <div class="books-grid">${books.map(b=>{const bc=gc(b);return`<div class="book-circle" style="background:${bc.bg};color:${bc.text};border-color:${bc.border}" onclick="openBookModal('${esc(prof.id)}','${esc(b)}')"><span>${b}</span></div>`;}).join('')}</div>
+      </div>`;
+    }).join('');
+  }
+
+  el.innerHTML=html;
+}
+
+function openProfileModal(profId){
+  const prof=allProfiles.find(p=>p.id===profId);
+  if(!prof) return;
+  const c=gc(prof.id);
+  const av=prof.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+  const books=getBooksOf(profId);
+  const isMine=profId===currentUser.id;
+  document.getElementById('modal-content').innerHTML=`
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:1rem">
+      <div class="avatar" style="width:54px;height:54px;font-size:20px;background:${c.bg};color:${c.text};border:2px solid ${c.border}">${av}</div>
+      <div>
+        <div style="font-size:18px;font-weight:700">${prof.name}</div>
+        <div style="font-size:12px;color:#888;margin-top:2px">📍 ${prof.address}</div>
+        <div style="font-size:11px;color:#aaa">@${prof.id}</div>
       </div>
-      <div class="section-title">ספרים תואמים (${books.length})</div>
-      <div class="books-grid">${books.map(b=>{const bc=gc(b);return`<div class="book-circle" style="background:${bc.bg};color:${bc.text};border-color:${bc.border}" onclick="openBookModal('${esc(prof.id)}','${esc(b)}')"><span>${b}</span></div>`;}).join('')}</div>
-    </div>`;
-  }).join('');
+    </div>
+    ${prof.bio?`<p style="font-size:13px;color:#666;line-height:1.6;margin-bottom:1rem">${prof.bio}</p>`:''}
+    <hr>
+    <div style="font-weight:700;margin:12px 0 8px">📚 ספרייה (${books.length})</div>
+    ${books.length?`
+      <div class="books-grid" style="margin-bottom:1rem">
+        ${books.map(b=>{const bc=gc(b);return`<div class="book-circle" style="background:${bc.bg};color:${bc.text};border-color:${bc.border};${isMine?'cursor:default':''}" ${!isMine?`onclick="closeModal();openBookModal('${esc(profId)}','${esc(b)}')"`:''} title="${b}"><span>${b}</span></div>`;}).join('')}
+      </div>
+      ${!isMine?'<p style="font-size:11px;color:#bbb;margin-bottom:10px">לחץ על ספר לשלוח בקשה</p>':''}
+    `:'<div class="empty-state" style="padding:1rem 0">אין ספרים עדיין</div>'}
+  `;
+  document.getElementById('book-modal').style.display='flex';
 }
 
 function renderProfile(){
