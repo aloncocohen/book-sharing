@@ -414,7 +414,7 @@ function doSearch(){
           <span style="color:#ccc;font-size:20px">›</span>
         </div>
         <div class="section-title">ספרים תואמים (${books.length})</div>
-        <div class="books-grid">${books.map(b=>{const bc=gc(b);return`<div class="book-circle" style="background:${bc.bg};color:${bc.text};border-color:${bc.border}" onclick="openBookModal('${esc(prof.id)}','${esc(b)}')"><span>${b}</span></div>`;}).join('')}</div>
+        <div class="books-grid">${books.map(b=>{const bc=gc(b);return`<div class="book-circle" style="background:${bc.bg};color:${bc.text};border-color:${bc.border}" onclick="openBookDetailModal('${esc(prof.id)}','${esc(b)}')"><span>${b}</span></div>`;}).join('')}</div>
       </div>`;
     }).join('');
   }
@@ -443,7 +443,7 @@ function openProfileModal(profId){
     <div style="font-weight:700;margin:12px 0 8px">📚 ספרייה (${books.length})</div>
     ${books.length?`
       <div class="books-grid" style="margin-bottom:1rem">
-        ${books.map(b=>{const bc=gc(b);return`<div class="book-circle" style="background:${bc.bg};color:${bc.text};border-color:${bc.border};${isMine?'cursor:default':''}" ${!isMine?`onclick="closeModal();openBookModal('${esc(profId)}','${esc(b)}')"`:''} title="${b}"><span>${b}</span></div>`;}).join('')}
+        ${books.map(b=>{const bc=gc(b);return`<div class="book-circle" style="background:${bc.bg};color:${bc.text};border-color:${bc.border};${isMine?'cursor:default':''}" ${!isMine?`onclick="openBookDetailModal('${esc(profId)}','${esc(b)}')"`:''} title="${b}"><span>${b}</span></div>`;}).join('')}
       </div>
       ${!isMine?'<p style="font-size:11px;color:#bbb;margin-bottom:10px">לחץ על ספר לשלוח בקשה</p>':''}
     `:'<div class="empty-state" style="padding:1rem 0">אין ספרים עדיין</div>'}
@@ -475,9 +475,9 @@ function renderProfile(){
         <button class="btn btn-primary" onclick="showAddBook()">+ הוסף ספר</button>
       </div>
       <div class="books-grid">
-        ${books.map(b=>{const bc=gc(b);return`<div class="book-circle" style="background:${bc.bg};color:${bc.text};border-color:${bc.border}" title="לחץ להסרה" onclick="removeBook('${esc(b)}')"><span>${b}</span></div>`;}).join('')}
+        ${allBooks.filter(b=>b.profile_id===prof.id).map(b=>{const bc=gc(b.title);return`<div class="book-circle" style="background:${bc.bg};color:${bc.text};border-color:${bc.border}" title="${b.title}" onclick="openMyBookDetail('${b.id}')"><span>${b.title}</span></div>`;}).join('')}
       </div>
-      ${books.length?'<p style="font-size:11px;color:#bbb;margin-top:8px">לחץ על ספר להסרה</p>':'<div class="empty-state" style="padding:1rem 0">עדיין לא הוספת ספרים</div>'}
+      ${books.length?'<p style="font-size:11px;color:#bbb;margin-top:8px">לחץ על ספר לצפייה / הסרה</p>':'<div class="empty-state" style="padding:1rem 0">עדיין לא הוספת ספרים</div>'}
     </div>
     <div id="edit-area"></div>`;
 }
@@ -532,11 +532,21 @@ async function saveProfile(){
   document.getElementById('welcome-msg').textContent='שלום, '+currentUser.name+' 👋';
 }
 
+const CATEGORIES=['פנטזיה','מדע בדיוני','מתח ומסתורין','רומן','ביוגרפיה','היסטוריה','ילדים ונוער','פיתוח אישי','בישול','מדע וטבע','פילוסופיה','שירה','הומור','אחר'];
+
 function showAddBook(){
   document.getElementById('edit-area').innerHTML=`
     <div class="card">
       <div style="font-weight:700;margin-bottom:12px">📖 הוסף ספר לאוסף</div>
+      <label style="font-size:12px;color:#888">שם הספר *</label>
       <input id="new-book" placeholder="שם הספר">
+      <label style="font-size:12px;color:#888">קטגוריה</label>
+      <select id="new-book-cat">
+        <option value="">-- בחר קטגוריה --</option>
+        ${CATEGORIES.map(c=>`<option>${c}</option>`).join('')}
+      </select>
+      <label style="font-size:12px;color:#888">תיאור קצר (אופציונלי)</label>
+      <textarea id="new-book-desc" placeholder="על מה הספר? מה דעתך עליו?"></textarea>
       <div style="display:flex;gap:8px">
         <button class="btn btn-primary" onclick="addBook()">הוסף</button>
         <button class="btn" onclick="document.getElementById('edit-area').innerHTML=''">ביטול</button>
@@ -548,7 +558,9 @@ function showAddBook(){
 async function addBook(){
   const title=document.getElementById('new-book').value.trim();
   if(!title) return;
-  await db('books','POST',{profile_id:currentUser.id,title});
+  const category=document.getElementById('new-book-cat').value||null;
+  const description=document.getElementById('new-book-desc').value.trim()||null;
+  await db('books','POST',{profile_id:currentUser.id,title,category,description});
   await loadAll();
   renderProfile();
 }
@@ -562,6 +574,55 @@ async function removeBook(title){
 }
 
 let selectedType='השאלה';
+
+function openMyBookDetail(bookId){
+  const bookObj=allBooks.find(b=>b.id==bookId);
+  if(!bookObj) return;
+  const bc=gc(bookObj.title);
+  document.getElementById('modal-content').innerHTML=`
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:1rem">
+      <div class="book-circle" style="width:64px;height:64px;font-size:11px;background:${bc.bg};color:${bc.text};border-color:${bc.border};cursor:default;flex-shrink:0"><span>${bookObj.title}</span></div>
+      <div>
+        <div style="font-weight:700;font-size:17px;line-height:1.3">${bookObj.title}</div>
+        ${bookObj.category?`<span class="badge badge-blue" style="margin-top:4px;display:inline-block">${bookObj.category}</span>`:''}
+      </div>
+    </div>
+    ${bookObj.description?`<div style="background:#f9f7f4;border-radius:10px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:#555;line-height:1.6">${bookObj.description}</div>`:''}
+    <hr>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-danger" style="flex:1" onclick="closeModal();removeBook('${esc(bookObj.title)}')">🗑️ הסר ספר</button>
+      <button class="btn" style="flex:1" onclick="closeModal()">סגור</button>
+    </div>
+  `;
+  document.getElementById('book-modal').style.display='flex';
+}
+
+function openBookDetailModal(profId, bookTitle){
+  const prof=allProfiles.find(p=>p.id===profId);
+  if(!prof) return;
+  const bookObj=allBooks.find(b=>b.profile_id===profId&&b.title===bookTitle);
+  const bc=gc(bookTitle);
+  const isMine=profId===currentUser.id;
+  document.getElementById('modal-content').innerHTML=`
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:1rem">
+      <div class="book-circle" style="width:64px;height:64px;font-size:11px;background:${bc.bg};color:${bc.text};border-color:${bc.border};cursor:default;flex-shrink:0"><span>${bookTitle}</span></div>
+      <div>
+        <div style="font-weight:700;font-size:17px;line-height:1.3">${bookTitle}</div>
+        ${bookObj&&bookObj.category?`<span class="badge badge-blue" style="margin-top:4px;display:inline-block">${bookObj.category}</span>`:''}
+        <div style="font-size:12px;color:#888;margin-top:4px">אצל ${prof.name} • 📍 ${prof.address}</div>
+      </div>
+    </div>
+    ${bookObj&&bookObj.description?`
+      <div style="background:#f9f7f4;border-radius:10px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:#555;line-height:1.6">
+        ${bookObj.description}
+      </div>`:''}
+    ${!isMine?`
+      <hr>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="openBookModal('${esc(profId)}','${esc(bookTitle)}')">📨 שלח בקשה ל${prof.name}</button>
+    `:''}
+  `;
+  document.getElementById('book-modal').style.display='flex';
+}
 
 function openBookModal(profId,book){
   const prof=allProfiles.find(p=>p.id===profId);
@@ -801,7 +862,7 @@ function mapClick(profId){
       <div class="section-title">ספרים (${books.length})</div>
       <div class="books-grid">${books.map(b=>{
         const bc=gc(b);
-        return`<div class="book-circle" style="background:${bc.bg};color:${bc.text};border-color:${bc.border};${isMine?'cursor:default':''}" ${!isMine?`onclick="openBookModal('${esc(profId)}','${esc(b)}')"`:''} ><span>${b}</span></div>`;
+        return`<div class="book-circle" style="background:${bc.bg};color:${bc.text};border-color:${bc.border};${isMine?'cursor:default':''}" ${!isMine?`onclick="openBookDetailModal('${esc(profId)}','${esc(b)}')"`:''} ><span>${b}</span></div>`;
       }).join('')}</div>
       ${!isMine&&books.length?'<p style="font-size:11px;color:#bbb;margin-top:8px">לחץ על ספר לשלוח בקשה</p>':''}
     </div>`;
