@@ -562,8 +562,15 @@ document.getElementById('book-modal').addEventListener('click',function(e){if(e.
 
 function renderRequests(){
   const el=document.getElementById('requests-view');
-  const incoming=allRequests.filter(r=>r.to_user===currentUser.id);
-  const outgoing=allRequests.filter(r=>r.from_user===currentUser.id);
+  const myRequests=allRequests.filter(r=>r.to_user===currentUser.id||r.from_user===currentUser.id);
+
+  // פעילות — ממתין או הצעה חוזרת
+  const activeIn=myRequests.filter(r=>r.to_user===currentUser.id&&(r.status==='pending'||r.status==='countered'));
+  const activeOut=myRequests.filter(r=>r.from_user===currentUser.id&&(r.status==='pending'||r.status==='countered'));
+
+  // היסטוריה — אושר או נדחה
+  const history=myRequests.filter(r=>r.status==='approved'||r.status==='rejected');
+
   const sc={
     pending:{l:'ממתין',c:'badge-orange'},
     approved:{l:'אושר ✓',c:'badge-green'},
@@ -571,14 +578,14 @@ function renderRequests(){
     countered:{l:'הצעה חוזרת',c:'badge-blue'}
   };
 
-  function card(r,isIn){
+  function card(r,isIn,isHistory){
     const otherId=isIn?r.from_user:r.to_user;
     const other=allProfiles.find(p=>p.id===otherId)||{name:otherId,id:otherId};
     const c=gc(other.id);
     const av=other.name.split(' ').map(w=>w[0]).join('').slice(0,2);
     const s=sc[r.status]||{l:r.status,c:'badge-blue'};
     let actions='';
-    if(isIn&&r.status==='pending'){
+    if(isIn&&r.status==='pending'&&!isHistory){
       actions=`<div class="req-actions">
         <button class="btn btn-primary" onclick="handleReq('${r.id}','approved')">✅ אשר</button>
         <button class="btn btn-danger" onclick="handleReq('${r.id}','rejected')">❌ דחה</button>
@@ -593,7 +600,8 @@ function renderRequests(){
       </div>`;
     }
     const when=r.created_at?new Date(r.created_at).toLocaleDateString('he-IL'):'';
-    return`<div class="req-card">
+    const opacity=isHistory?'opacity:0.7;':'';
+    return`<div class="req-card" style="${opacity}">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
         <div class="avatar" style="width:34px;height:34px;font-size:12px;background:${c.bg};color:${c.text};border:2px solid ${c.border}">${av}</div>
         <div style="flex:1">
@@ -611,15 +619,38 @@ function renderRequests(){
     </div>`;
   }
 
+  const historyHtml=history.length?`
+    <div class="card" style="margin-top:0.5rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;cursor:pointer" onclick="toggleHistory()">
+        <div style="font-weight:700">🗂️ היסטוריה (${history.length})</div>
+        <span id="history-arrow" style="color:#aaa;font-size:18px">›</span>
+      </div>
+      <div id="history-list" style="display:none">
+        ${history.map(r=>{
+          const isIn=r.to_user===currentUser.id;
+          return card(r,isIn,true);
+        }).join('')}
+      </div>
+    </div>`:'' ;
+
   el.innerHTML=`
     <div class="card">
-      <div style="font-weight:700;margin-bottom:12px">📥 בקשות שהתקבלו (${incoming.length})</div>
-      ${incoming.length?incoming.map(r=>card(r,true)).join(''):'<div class="empty-state">אין בקשות נכנסות</div>'}
+      <div style="font-weight:700;margin-bottom:12px">📥 בקשות נכנסות (${activeIn.length})</div>
+      ${activeIn.length?activeIn.map(r=>card(r,true,false)).join(''):'<div class="empty-state">אין בקשות פעילות</div>'}
     </div>
     <div class="card">
-      <div style="font-weight:700;margin-bottom:12px">📤 בקשות שנשלחו (${outgoing.length})</div>
-      ${outgoing.length?outgoing.map(r=>card(r,false)).join(''):'<div class="empty-state">לא שלחת בקשות עדיין</div>'}
-    </div>`;
+      <div style="font-weight:700;margin-bottom:12px">📤 בקשות יוצאות (${activeOut.length})</div>
+      ${activeOut.length?activeOut.map(r=>card(r,false,false)).join(''):'<div class="empty-state">לא שלחת בקשות פעילות</div>'}
+    </div>
+    ${historyHtml}`;
+}
+
+function toggleHistory(){
+  const list=document.getElementById('history-list');
+  const arrow=document.getElementById('history-arrow');
+  const open=list.style.display==='none';
+  list.style.display=open?'block':'none';
+  arrow.style.transform=open?'rotate(90deg)':'';
 }
 
 async function handleReq(id,status){
