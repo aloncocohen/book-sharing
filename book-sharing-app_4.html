@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ספרייה משותפת</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Heebo',sans-serif;background:#f5f3ee;min-height:100vh;color:#1a1a1a}
+.app{max-width:860px;margin:0 auto;padding:1rem}
+header{text-align:center;padding:1.5rem 0 1rem}
+header h1{font-size:26px;font-weight:700}
+header p{font-size:13px;color:#888;margin-top:4px}
+.nav{display:flex;gap:6px;margin:1rem 0 1.5rem;background:#fff;border:1px solid #e5e2db;border-radius:14px;padding:6px}
+.nav button{flex:1;padding:9px 10px;border:none;background:transparent;border-radius:10px;cursor:pointer;font-size:13px;font-family:'Heebo',sans-serif;color:#666;transition:all 0.15s}
+.nav button.active{background:#1a1a1a;color:#fff;font-weight:500}
+.page{display:none}.page.active{display:block}
+.card{background:#fff;border:1px solid #e5e2db;border-radius:14px;padding:1.25rem;margin-bottom:1rem}
+.book-circle{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;text-align:center;cursor:pointer;flex-shrink:0;transition:transform 0.15s;line-height:1.2;padding:5px;border:2px solid transparent}
+.book-circle:hover{transform:scale(1.1)}
+.books-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+input,textarea,select{width:100%;padding:9px 13px;border:1px solid #ddd;border-radius:10px;background:#fff;color:#1a1a1a;font-size:14px;font-family:'Heebo',sans-serif;margin-bottom:8px;outline:none;transition:border 0.15s}
+input:focus,textarea:focus,select:focus{border-color:#1a1a1a}
+textarea{resize:vertical;min-height:60px}
+.btn{padding:9px 16px;border:1px solid #ddd;border-radius:10px;background:transparent;color:#1a1a1a;cursor:pointer;font-size:13px;font-family:'Heebo',sans-serif;transition:all 0.15s}
+.btn:hover{background:#f5f3ee}
+.btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.btn-primary:hover{background:#333}
+.btn-danger{background:#fff0f0;color:#c0392b;border-color:#f5c6c6}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-blue{background:#e8f4fd;color:#1a6fa8}
+.badge-orange{background:#fff3e0;color:#b36200}
+.badge-green{background:#e8f5e9;color:#2e7d32}
+.badge-red{background:#fdecea;color:#c62828}
+.req-card{border:1px solid #e5e2db;border-radius:10px;padding:12px;margin-bottom:8px;background:#fafaf8}
+.profile-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #e5e2db;border-radius:10px;margin-bottom:8px;cursor:pointer;background:#fafaf8;transition:background 0.15s}
+.profile-row:hover{background:#f0ede8}
+.avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+.search-bar{display:flex;gap:8px;margin-bottom:1rem}
+.search-bar input{margin-bottom:0}
+.map-wrap{background:#d4e9c8;border-radius:12px;height:240px;position:relative;overflow:hidden;margin-bottom:1rem;border:1px solid #b8d4a8}
+.notif-dot{width:7px;height:7px;border-radius:50%;background:#e74c3c;display:inline-block;margin-right:3px}
+.chip{padding:5px 12px;border-radius:20px;font-size:12px;border:1px solid #ddd;cursor:pointer;background:#fff;color:#1a1a1a;font-family:'Heebo',sans-serif;transition:all 0.15s}
+.chip:hover{background:#f5f3ee}
+.chip.selected{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.section-title{font-size:12px;color:#888;margin-bottom:8px;font-weight:500}
+.req-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;align-items:center;justify-content:center;padding:1rem}
+.modal-box{background:#fff;border-radius:16px;padding:1.5rem;width:380px;max-width:100%;position:relative;max-height:90vh;overflow-y:auto}
+.modal-close{position:absolute;top:12px;left:12px;background:none;border:none;cursor:pointer;font-size:22px;color:#999}
+.empty-state{text-align:center;padding:2rem 0;color:#aaa;font-size:14px}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid #ddd;border-top-color:#1a1a1a;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-screen{position:fixed;inset:0;background:#f5f3ee;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:12px}
+.loading-screen h2{font-size:22px;font-weight:700}
+hr{border:none;border-top:1px solid #e5e2db;margin:10px 0}
+.login-wrap{max-width:380px;margin:3rem auto}
+.login-wrap h2{font-size:22px;font-weight:700;margin-bottom:6px;text-align:center}
+.login-wrap .sub{color:#888;font-size:13px;text-align:center;margin-bottom:1.5rem}
+.tabs{display:flex;border:1px solid #ddd;border-radius:10px;overflow:hidden;margin-bottom:1.2rem}
+.tabs button{flex:1;padding:9px;border:none;background:#fff;cursor:pointer;font-family:'Heebo',sans-serif;font-size:14px;color:#666}
+.tabs button.active{background:#1a1a1a;color:#fff;font-weight:500}
+.input-wrap{position:relative}
+.input-wrap input{padding-left:40px}
+.eye-btn{position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#aaa;font-size:16px;padding:0;line-height:1}
+.strength-bar{height:4px;border-radius:4px;margin-top:-6px;margin-bottom:8px;transition:all 0.3s}
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loading-screen">
+  <div style="font-size:40px">📚</div>
+  <h2>ספרייה משותפת</h2>
+  <p><span class="spinner"></span>טוען...</p>
+</div>
+
+<div class="app" id="login-page" style="display:none">
+  <div class="login-wrap">
+    <div style="text-align:center;font-size:44px;margin-bottom:12px">📚</div>
+    <h2>ספרייה משותפת</h2>
+    <p class="sub">שתף, השאל והחלף ספרים עם אנשים בקרבתך</p>
+    <div class="card">
+      <div class="tabs">
+        <button class="active" id="tab-login" onclick="switchTab('login')">כניסה</button>
+        <button id="tab-register" onclick="switchTab('register')">הרשמה</button>
+        <button id="tab-forgot" onclick="switchTab('forgot')">שכחתי סיסמה</button>
+      </div>
+
+      <!-- כניסה / הרשמה -->
+      <div id="login-register-section">
+        <label style="font-size:12px;color:#888">שם משתמש</label>
+        <input id="l-id" placeholder="ללא רווחים (עברית או אנגלית)" oninput="this.value=this.value.replace(/\s/g,'')">
+
+        <div id="register-fields" style="display:none">
+          <label style="font-size:12px;color:#888">שם מלא</label>
+          <input id="l-name" placeholder="השם שיופיע לאחרים">
+          <label style="font-size:12px;color:#888">כתובת מגורים</label>
+          <input id="l-address" placeholder="עיר, רחוב ומספר">
+          <label style="font-size:12px;color:#888">קצת עלייך (אופציונלי)</label>
+          <textarea id="l-bio" placeholder="אהבות קריאה, ז'אנרים מועדפים..."></textarea>
+          <label style="font-size:12px;color:#888">שאלת אבטחה</label>
+          <select id="l-secq">
+            <option value="">-- בחר שאלה --</option>
+            <option>מה שמו הפרטי של הסבא מצד אבא?</option>
+            <option>מה שמו הפרטי של הסבא מצד אמא?</option>
+            <option>מה שמה הפרטי של הסבתא מצד אבא?</option>
+            <option>מה שמה הפרטי של הסבתא מצד אמא?</option>
+            <option>מה שם החיית המחמד הראשונה שלך?</option>
+            <option>באיזה רחוב גרת בילדותך?</option>
+            <option>מה שם בית הספר הראשון שלמדת בו?</option>
+            <option>מה שם העיר שנולדת בה?</option>
+          </select>
+          <label style="font-size:12px;color:#888">תשובה לשאלת האבטחה</label>
+          <input id="l-seca" placeholder="התשובה (לא תוצג לאחרים)">
+        </div>
+
+        <label style="font-size:12px;color:#888">סיסמה</label>
+        <div class="input-wrap">
+          <input id="l-pass" type="password" placeholder="לפחות 6 תווים" oninput="checkStrength()">
+          <button class="eye-btn" onclick="togglePass('l-pass',this)" type="button">👁</button>
+        </div>
+        <div id="strength-bar" class="strength-bar" style="display:none;width:0%"></div>
+
+        <div id="register-pass-confirm" style="display:none">
+          <label style="font-size:12px;color:#888">אימות סיסמה</label>
+          <div class="input-wrap">
+            <input id="l-pass2" type="password" placeholder="הקלד שוב את הסיסמה">
+            <button class="eye-btn" onclick="togglePass('l-pass2',this)" type="button">👁</button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" style="width:100%;margin-top:4px" id="login-btn" onclick="doLogin()">כניסה</button>
+        <p id="login-err" style="color:#c0392b;font-size:13px;margin-top:8px;text-align:center;min-height:18px"></p>
+      </div>
+
+      <!-- שכחתי סיסמה -->
+      <div id="forgot-section" style="display:none">
+        <div id="forgot-step1">
+          <label style="font-size:12px;color:#888">שם משתמש</label>
+          <input id="f-id" placeholder="הזן את שם המשתמש שלך" oninput="this.value=this.value.replace(/\s/g,'')">
+          <button class="btn btn-primary" style="width:100%" onclick="loadSecurityQuestion()">המשך</button>
+          <p id="forgot-err" style="color:#c0392b;font-size:13px;margin-top:8px;text-align:center;min-height:18px"></p>
+        </div>
+        <div id="forgot-step2" style="display:none">
+          <div style="background:#f9f7f4;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:14px;font-weight:500" id="f-question-text"></div>
+          <label style="font-size:12px;color:#888">תשובה</label>
+          <input id="f-answer" placeholder="הזן את תשובתך">
+          <button class="btn btn-primary" style="width:100%" onclick="verifySecurityAnswer()">אמת תשובה</button>
+          <p id="forgot-err2" style="color:#c0392b;font-size:13px;margin-top:8px;text-align:center;min-height:18px"></p>
+        </div>
+        <div id="forgot-step3" style="display:none">
+          <div class="alert" style="background:#e8f5e9;color:#2e7d32;padding:10px;border-radius:8px;margin-bottom:12px;font-size:13px">✅ התשובה נכונה! קבע סיסמה חדשה</div>
+          <label style="font-size:12px;color:#888">סיסמה חדשה</label>
+          <div class="input-wrap">
+            <input id="f-newpass" type="password" placeholder="לפחות 6 תווים">
+            <button class="eye-btn" onclick="togglePass('f-newpass',this)" type="button">👁</button>
+          </div>
+          <label style="font-size:12px;color:#888">אימות סיסמה</label>
+          <div class="input-wrap">
+            <input id="f-newpass2" type="password" placeholder="הקלד שוב">
+            <button class="eye-btn" onclick="togglePass('f-newpass2',this)" type="button">👁</button>
+          </div>
+          <button class="btn btn-primary" style="width:100%" onclick="resetPassword()">שמור סיסמה חדשה</button>
+          <p id="forgot-err3" style="color:#c0392b;font-size:13px;margin-top:8px;text-align:center;min-height:18px"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="main-app" style="display:none">
+  <header>
+    <h1>📚 ספרייה משותפת</h1>
+    <p id="welcome-msg"></p>
+  </header>
+  <div class="nav">
+    <button class="active" onclick="showPage('search')">🔍 חיפוש</button>
+    <button onclick="showPage('profile')">👤 הפרופיל</button>
+    <button onclick="showPage('requests')"><span id="notif-indicator"></span>🔔 בקשות</button>
+    <button onclick="showPage('map')">🗺️ מפה</button>
+    <button onclick="logout()" style="flex:0;color:#c0392b;padding:9px 10px">יציאה</button>
+  </div>
+  <div id="page-search" class="page active">
+    <div class="search-bar">
+      <input type="text" id="search-input" placeholder="חפש שם ספר..." oninput="doSearch()">
+    </div>
+    <div id="search-results"><div class="empty-state">🔍 הקלד שם ספר כדי לחפש</div></div>
+  </div>
+  <div id="page-profile" class="page"><div id="profile-view"></div></div>
+  <div id="page-requests" class="page"><div id="requests-view"></div></div>
+  <div id="page-map" class="page"><div id="map-view"></div></div>
+</div>
+
+<div class="modal-overlay" id="book-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script>
+const SUPA_URL='https://ffvyovinaqzvqoxdytrc.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmdnlvdmluYXF6dnFveGR5dHJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1Nzc2NTgsImV4cCI6MjA5NDE1MzY1OH0.GhOxokjgv29J2CiOt6vwdgmOH9nqCyFVfKSZjb3Qm2E';
+
+const COLORS=[
+  {bg:'#f0eeff',text:'#3d34a0',border:'#c9c4f0'},
+  {bg:'#e6f7f0',text:'#1a6b47',border:'#9dd4bb'},
+  {bg:'#fef0e8',text:'#9c3a12',border:'#f2b899'},
+  {bg:'#fdeef4',text:'#8b2252',border:'#f0a8c8'},
+  {bg:'#e8f3fd',text:'#1a5c96',border:'#a0c8f0'},
+  {bg:'#edf7e4',text:'#2d6614',border:'#a8d880'},
+  {bg:'#fff8e6',text:'#7a4800',border:'#f0cc80'},
+  {bg:'#fdeaea',text:'#871a1a',border:'#f0a0a0'},
+  {bg:'#f0f0f0',text:'#444',border:'#ccc'},
+];
+
+function gc(str){
+  let h=0;
+  for(let i=0;i<str.length;i++) h=str.charCodeAt(i)+((h<<5)-h);
+  return COLORS[Math.abs(h)%COLORS.length];
+}
+
+async function hashPassword(password){
+  const encoder=new TextEncoder();
+  const data=encoder.encode(password);
+  const hashBuffer=await crypto.subtle.digest('SHA-256',data);
+  const hashArray=Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// עוטף את ה-ID בצורה בטוחה ל-URL
+function encId(id){return encodeURIComponent(id);}
+
+async function db(table,method='GET',body=null,query=''){
+  const url=`${SUPA_URL}/rest/v1/${table}${query}`;
+  const headers={
+    'Content-Type':'application/json',
+    'apikey':SUPA_KEY,
+    'Authorization':'Bearer '+SUPA_KEY,
+    'Prefer':'return=representation'
+  };
+  const res=await fetch(url,{method,headers,body:body?JSON.stringify(body):null});
+  if(!res.ok){const e=await res.text();throw new Error(e);}
+  const t=await res.text();
+  return t?JSON.parse(t):[];
+}
+
+let currentUser=null;
+let allProfiles=[];
+let allBooks=[];
+let allRequests=[];
+
+async function init(){
+  const saved=localStorage.getItem('bk_user');
+  if(saved){
+    try{
+      const profiles=await db('profiles','GET',null,`?id=eq.${encId(saved)}&select=id,name,address,bio,lat,lng`);
+      if(profiles.length){
+        currentUser=profiles[0];
+        await loadAll();
+        showApp();
+        return;
+      }
+    }catch(e){}
+  }
+  document.getElementById('loading-screen').style.display='none';
+  document.getElementById('login-page').style.display='block';
+}
+
+async function loadAll(){
+  allProfiles=await db('profiles','GET',null,'?order=name&select=id,name,address,bio,lat,lng');
+  allBooks=await db('books','GET',null,'?order=id');
+  allRequests=await db('requests','GET',null,'?order=created_at.desc');
+}
+
+function showApp(){
+  document.getElementById('loading-screen').style.display='none';
+  document.getElementById('login-page').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  document.getElementById('welcome-msg').textContent='שלום, '+currentUser.name+' 👋';
+  render();
+}
+
+let isRegister=false;
+let forgotUserId=null;
+
+function switchTab(t){
+  isRegister=t==='register';
+  const isForgot=t==='forgot';
+  ['login','register','forgot'].forEach(x=>{
+    document.getElementById('tab-'+x).classList.toggle('active',t===x);
+  });
+  document.getElementById('login-register-section').style.display=isForgot?'none':'block';
+  document.getElementById('forgot-section').style.display=isForgot?'block':'none';
+  if(!isForgot){
+    document.getElementById('register-fields').style.display=isRegister?'block':'none';
+    document.getElementById('register-pass-confirm').style.display=isRegister?'block':'none';
+    document.getElementById('strength-bar').style.display=isRegister?'block':'none';
+    document.getElementById('login-btn').textContent=isRegister?'הרשמה':'כניסה';
+    document.getElementById('login-err').textContent='';
+  }
+  // איפוס שלבי שכחתי סיסמה
+  if(isForgot){
+    document.getElementById('forgot-step1').style.display='block';
+    document.getElementById('forgot-step2').style.display='none';
+    document.getElementById('forgot-step3').style.display='none';
+    document.getElementById('f-id').value='';
+    forgotUserId=null;
+  }
+}
+
+async function loadSecurityQuestion(){
+  const id=document.getElementById('f-id').value.trim().replace(/\s/g,'');
+  if(!id){document.getElementById('forgot-err').textContent='נא להזין שם משתמש';return;}
+  try{
+    const profiles=await db('profiles','GET',null,`?id=eq.${encId(id)}&select=id,security_question`);
+    if(!profiles.length){document.getElementById('forgot-err').textContent='שם משתמש לא נמצא';return;}
+    if(!profiles[0].security_question){document.getElementById('forgot-err').textContent='למשתמש זה לא הוגדרה שאלת אבטחה';return;}
+    forgotUserId=id;
+    document.getElementById('f-question-text').textContent='🔐 '+profiles[0].security_question;
+    document.getElementById('forgot-step1').style.display='none';
+    document.getElementById('forgot-step2').style.display='block';
+  }catch(e){document.getElementById('forgot-err').textContent='שגיאה: '+e.message;}
+}
+
+async function verifySecurityAnswer(){
+  const answer=document.getElementById('f-answer').value.trim().toLowerCase();
+  if(!answer){document.getElementById('forgot-err2').textContent='נא להזין תשובה';return;}
+  try{
+    const profiles=await db('profiles','GET',null,`?id=eq.${encId(forgotUserId)}&select=security_answer`);
+    const correct=(profiles[0].security_answer||'').trim().toLowerCase();
+    if(answer!==correct){document.getElementById('forgot-err2').textContent='תשובה שגויה, נסה שנית';return;}
+    document.getElementById('forgot-step2').style.display='none';
+    document.getElementById('forgot-step3').style.display='block';
+  }catch(e){document.getElementById('forgot-err2').textContent='שגיאה: '+e.message;}
+}
+
+async function resetPassword(){
+  const np=document.getElementById('f-newpass').value;
+  const np2=document.getElementById('f-newpass2').value;
+  if(np.length<6){document.getElementById('forgot-err3').textContent='הסיסמה חייבת להכיל לפחות 6 תווים';return;}
+  if(np!==np2){document.getElementById('forgot-err3').textContent='הסיסמאות לא תואמות';return;}
+  try{
+    const hashed=await hashPassword(np);
+    await db('profiles','PATCH',{password:hashed},`?id=eq.${encId(forgotUserId)}`);
+    alert('✅ הסיסמה שונתה בהצלחה! כעת תוכל להתחבר.');
+    switchTab('login');
+  }catch(e){document.getElementById('forgot-err3').textContent='שגיאה: '+e.message;}
+}
+
+function togglePass(id,btn){
+  const el=document.getElementById(id);
+  el.type=el.type==='password'?'text':'password';
+  btn.textContent=el.type==='password'?'👁':'🔒';
+}
+
+function checkStrength(){
+  if(!isRegister) return;
+  const pass=document.getElementById('l-pass').value;
+  const bar=document.getElementById('strength-bar');
+  if(!pass){bar.style.width='0%';return;}
+  let strength=0;
+  if(pass.length>=6) strength++;
+  if(pass.length>=10) strength++;
+  if(/[A-Z]/.test(pass)||/[א-ת]/.test(pass)) strength++;
+  if(/[0-9!@#$%]/.test(pass)) strength++;
+  const colors=['#e74c3c','#e67e22','#f1c40f','#2ecc71'];
+  const widths=['25%','50%','75%','100%'];
+  bar.style.background=colors[strength-1]||'#ddd';
+  bar.style.width=widths[strength-1]||'10%';
+}
+
+function setErr(msg){document.getElementById('login-err').textContent=msg;}
+
+async function doLogin(){
+  // מאפשר עברית, אנגלית, מספרים — ללא רווחים
+  const raw=document.getElementById('l-id').value.trim();
+  const id=raw.replace(/\s/g,'');
+  const pass=document.getElementById('l-pass').value;
+
+  if(!id){setErr('נא להזין שם משתמש');return;}
+  if(id.length<2){setErr('שם משתמש חייב להכיל לפחות 2 תווים');return;}
+  if(!pass){setErr('נא להזין סיסמה');return;}
+  if(pass.length<6){setErr('הסיסמה חייבת להכיל לפחות 6 תווים');return;}
+
+  const btn=document.getElementById('login-btn');
+  btn.textContent='...';btn.disabled=true;
+
+  try{
+    const hashedPass=await hashPassword(pass);
+
+    if(isRegister){
+      const name=document.getElementById('l-name').value.trim();
+      const address=document.getElementById('l-address').value.trim();
+      const bio=document.getElementById('l-bio').value.trim();
+      const pass2=document.getElementById('l-pass2').value;
+
+      if(!name||!address){setErr('נא למלא שם מלא וכתובת');btn.textContent='הרשמה';btn.disabled=false;return;}
+      if(pass!==pass2){setErr('הסיסמאות לא תואמות');btn.textContent='הרשמה';btn.disabled=false;return;}
+
+      const secq=document.getElementById('l-secq').value;
+      const seca=document.getElementById('l-seca').value.trim().toLowerCase();
+      if(!secq||!seca){setErr('נא לבחור שאלת אבטחה ולמלא תשובה');btn.textContent='הרשמה';btn.disabled=false;return;}
+
+      const existing=await db('profiles','GET',null,`?id=eq.${encId(id)}`);
+      if(existing.length){setErr('שם משתמש תפוס, בחר אחר');btn.textContent='הרשמה';btn.disabled=false;return;}
+
+      const lat=30.8+Math.random()*2.6;
+      const lng=34.4+Math.random()*1.2;
+      const res=await db('profiles','POST',{id,name,address,bio,lat,lng,password:hashedPass,security_question:secq,security_answer:seca});
+      currentUser=res[0];
+
+    } else {
+      const profiles=await db('profiles','GET',null,`?id=eq.${encId(id)}&select=id,name,address,bio,lat,lng,password`);
+      if(!profiles.length){setErr('שם משתמש לא נמצא');btn.textContent='כניסה';btn.disabled=false;return;}
+      if(profiles[0].password!==hashedPass){setErr('סיסמה שגויה');btn.textContent='כניסה';btn.disabled=false;return;}
+      const {password,...userWithoutPass}=profiles[0];
+      currentUser=userWithoutPass;
+    }
+
+    localStorage.setItem('bk_user',currentUser.id);
+    await loadAll();
+    showApp();
+  }catch(e){
+    setErr('שגיאה: '+e.message);
+    btn.textContent=isRegister?'הרשמה':'כניסה';
+    btn.disabled=false;
+  }
+}
+
+function logout(){
+  localStorage.removeItem('bk_user');
+  currentUser=null;
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('login-page').style.display='block';
+  switchTab('login');
+  document.getElementById('l-id').value='';
+  document.getElementById('l-pass').value='';
+}
+
+function showPage(p){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  const idx={search:0,profile:1,requests:2,map:3}[p];
+  document.querySelectorAll('.nav button')[idx].classList.add('active');
+  render(p);
+}
+
+function render(p){
+  updateNotif();
+  if(!p||p==='search') renderSearch();
+  if(!p||p==='profile') renderProfile();
+  if(!p||p==='requests') renderRequests();
+  if(!p||p==='map') renderMap();
+}
+
+function updateNotif(){
+  const n=allRequests.filter(r=>r.to_user===currentUser.id&&r.status==='pending').length;
+  document.getElementById('notif-indicator').innerHTML=n?'<span class="notif-dot"></span>':'';
+}
+
+function getBooksOf(profId){
+  return allBooks.filter(b=>b.profile_id===profId).map(b=>b.title);
+}
+
+function esc(s){return (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');}
+
+function doSearch(){
+  const q=(document.getElementById('search-input').value||'').trim().toLowerCase();
+  const el=document.getElementById('search-results');
+  if(!q){el.innerHTML='<div class="empty-state">🔍 הקלד שם ספר או שם משתמש לחיפוש</div>';return;}
+
+  const profileMatches=allProfiles.filter(p=>
+    p.id!==currentUser.id &&
+    (p.name.toLowerCase().includes(q)||p.id.toLowerCase().includes(q))
+  );
+
+  const bookResults=[];
+  for(const prof of allProfiles){
+    if(prof.id===currentUser.id) continue;
+    const books=getBooksOf(prof.id).filter(b=>b.toLowerCase().includes(q));
+    if(books.length) bookResults.push({prof,books});
+  }
+
+  if(!profileMatches.length&&!bookResults.length){
+    el.innerHTML='<div class="empty-state">😕 לא נמצאו תוצאות</div>';return;
+  }
+
+  let html='';
+
+  if(profileMatches.length){
+    html+=`<div style="font-size:12px;color:#888;font-weight:500;margin-bottom:8px">👤 משתמשים (${profileMatches.length})</div>`;
+    html+=profileMatches.map(prof=>{
+      const c=gc(prof.id);
+      const av=prof.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+      const books=getBooksOf(prof.id);
+      return`<div class="card" style="cursor:pointer" onclick="openProfileModal('${esc(prof.id)}')">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="avatar" style="background:${c.bg};color:${c.text};border:2px solid ${c.border}">${av}</div>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:15px">${prof.name}</div>
+            <div style="font-size:12px;color:#888">📍 ${prof.address} • 📚 ${books.length} ספרים</div>
+            ${prof.bio?`<div style="font-size:12px;color:#aaa;margin-top:2px">${prof.bio.slice(0,60)}${prof.bio.length>60?'...':''}</div>`:''}
+          </div>
+          <span style="color:#ccc;font-size:20px">›</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  if(bookResults.length){
+    if(profileMatches.length) html+=`<div style="font-size:12px;color:#888;font-weight:500;margin:12px 0 8px">📚 ספרים (${bookResults.length} תוצאות)</div>`;
+    html+=bookResults.map(({prof,books})=>{
+      const c=gc(prof.id);
+      const av=prof.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+      return`<div class="card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;cursor:pointer" onclick="openProfileModal('${esc(prof.id)}')">
+          <div class="avatar" style="background:${c.bg};color:${c.text};border:2px solid ${c.border}">${av}</div>
+          <div style="flex:1"><div style="font-weight:700;font-size:15px">${prof.name}</div><div style="font-size:12px;color:#888">📍 ${prof.address}</div></div>
+          <span style="color:#ccc;font-size:20px">›</span>
+        </div>
+        <div class="section-title">ספרים תואמים (${books.length})</div>
+        <div class="books-grid">${books.map(b=>{const bc=gc(b);return`<div class="book-circle" style="background:${bc.bg};color:${bc.text};border-color:${bc.border}" onclick="openBookDetailModal('${esc(prof.id)}','${esc(b)}')"><span>${b}</span></div>`;}).join('')}</div>
+      </div>`;
+    }).join('');
+  }
+
+  el.innerHTML=html;
+}
+
+function openProfileModal(profId){
+  const prof=allProfiles.find(p=>p.id===profId);
+  if(!prof) return;
+  const c=gc(prof.id);
+  const av=prof.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+  const books=getBooksOf(profId);
+  const isMine=profId===currentUser.id;
+  document.getElementById('modal-content').innerHTML=`
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:1rem">
+      <div class="avatar" style="width:54px;height:54px;font-size:20px;background:${c.bg};color:${c.text};border:2px solid ${c.border}">${av}</div>
+      <div>
+        <div style="font-size:18px;font-weight:700">${prof.name}</div>
+        <div style="font-size:12px;color:#888;margin-top:2px">📍 ${prof.address}</div>
+        <div style="font-size:11px;color:#aaa">@${prof.id}</div>
+      </div>
+    </div>
+    ${prof.bio?`<p style="font-size:13px;color:#666;line-height:1.6;margin-bottom:1rem">${prof.bio}</p>`:''}
+    <hr>
+    <div style="font-weight:700;margin:12px 0 8px">📚 ספרייה (${books.length})</div>
+    ${books.length?`
+      <div class="books-grid" style="margin-bottom:1rem">
+        ${books.map(b=>{const bc=gc(b);return`<div class="book-circle" style="background:${bc.bg};color:${bc.text};border-color:${bc.border};${isMine?'cursor:default':''}" ${!isMine?`onclick="openBookDetailModal('${esc(profId)}','${esc(b)}')"`:''} title="${b}"><span>${b}</span></div>`;}).join('')}
+      </div>
+      ${!isMine?'<p style="font-size:11px;color:#bbb;margin-bottom:10px">לחץ על ספר לשלוח בקשה</p>':''}
+    `:'<div class="empty-state" style="padding:1rem 0">אין ספרים עדיין</div>'}
+  `;
+  document.getElementById('book-modal').style.display='flex';
+}
+
+function renderProfile(){
+  const prof=currentUser;
+  const c=gc(prof.id);
+  const av=prof.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+  const books=getBooksOf(prof.id);
+  document.getElementById('profile-view').innerHTML=`
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:1rem">
+        <div class="avatar" style="width:54px;height:54px;font-size:18px;background:${c.bg};color:${c.text};border:2px solid ${c.border}">${av}</div>
+        <div style="flex:1">
+          <div style="font-size:18px;font-weight:700">${prof.name}</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">📍 ${prof.address}</div>
+          <div style="font-size:11px;color:#aaa">@${prof.id}</div>
+        </div>
+        <button class="btn" onclick="showEditProfile()">✏️ ערוך</button>
+      </div>
+      <p style="font-size:13px;color:#666;line-height:1.6">${prof.bio||'לא הוסף תיאור עדיין'}</p>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span style="font-weight:700">📚 הספרים שלי (${books.length})</span>
+        <button class="btn btn-primary" onclick="showAddBook()">+ הוסף ספר</button>
+      </div>
+      <div class="books-grid">
+        ${allBooks.filter(b=>b.profile_id===prof.id).map(b=>{const bc=gc(b.title);return`<div class="book-circle" style="background:${bc.bg};color:${bc.text};border-color:${bc.border}" title="${b.title}" onclick="openMyBookDetail('${b.id}')"><span>${b.title}</span></div>`;}).join('')}
+      </div>
+      ${books.length?'<p style="font-size:11px;color:#bbb;margin-top:8px">לחץ על ספר לצפייה / הסרה</p>':'<div class="empty-state" style="padding:1rem 0">עדיין לא הוספת ספרים</div>'}
+    </div>
+    <div id="edit-area"></div>`;
+}
+
+function showEditProfile(){
+  const p=currentUser;
+  document.getElementById('edit-area').innerHTML=`
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:12px">✏️ ערוך פרופיל</div>
+      <label style="font-size:12px;color:#888">שם מלא</label>
+      <input id="e-name" value="${p.name}">
+      <label style="font-size:12px;color:#888">כתובת</label>
+      <input id="e-addr" value="${p.address}">
+      <label style="font-size:12px;color:#888">קצת עלייך</label>
+      <textarea id="e-bio">${p.bio||''}</textarea>
+      <hr style="margin-bottom:12px">
+      <div style="font-weight:500;margin-bottom:8px">🔒 שינוי סיסמה (אופציונלי)</div>
+      <label style="font-size:12px;color:#888">סיסמה חדשה</label>
+      <div class="input-wrap">
+        <input id="e-pass" type="password" placeholder="השאר ריק אם לא רוצה לשנות">
+        <button class="eye-btn" onclick="togglePass('e-pass',this)" type="button">👁</button>
+      </div>
+      <label style="font-size:12px;color:#888">אימות סיסמה</label>
+      <div class="input-wrap">
+        <input id="e-pass2" type="password" placeholder="הקלד שוב">
+        <button class="eye-btn" onclick="togglePass('e-pass2',this)" type="button">👁</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-primary" onclick="saveProfile()">💾 שמור</button>
+        <button class="btn" onclick="document.getElementById('edit-area').innerHTML=''">ביטול</button>
+      </div>
+      <p id="edit-err" style="color:#c0392b;font-size:13px;margin-top:8px"></p>
+    </div>`;
+}
+
+async function saveProfile(){
+  const name=document.getElementById('e-name').value.trim()||currentUser.name;
+  const address=document.getElementById('e-addr').value.trim()||currentUser.address;
+  const bio=document.getElementById('e-bio').value.trim();
+  const newPass=document.getElementById('e-pass').value;
+  const newPass2=document.getElementById('e-pass2').value;
+  let updateObj={name,address,bio};
+  if(newPass){
+    if(newPass.length<6){document.getElementById('edit-err').textContent='הסיסמה חייבת להכיל לפחות 6 תווים';return;}
+    if(newPass!==newPass2){document.getElementById('edit-err').textContent='הסיסמאות לא תואמות';return;}
+    updateObj.password=await hashPassword(newPass);
+  }
+  await db('profiles','PATCH',updateObj,`?id=eq.${encId(currentUser.id)}`);
+  currentUser={...currentUser,name,address,bio};
+  await loadAll();
+  renderProfile();
+  document.getElementById('welcome-msg').textContent='שלום, '+currentUser.name+' 👋';
+}
+
+const CATEGORIES=['פנטזיה','מדע בדיוני','מתח ומסתורין','רומן','ביוגרפיה','היסטוריה','ילדים ונוער','פיתוח אישי','בישול','מדע וטבע','פילוסופיה','שירה','הומור','אחר'];
+
+function showAddBook(){
+  document.getElementById('edit-area').innerHTML=`
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:12px">📖 הוסף ספר לאוסף</div>
+      <label style="font-size:12px;color:#888">שם הספר *</label>
+      <input id="new-book" placeholder="שם הספר">
+      <label style="font-size:12px;color:#888">קטגוריה</label>
+      <select id="new-book-cat">
+        <option value="">-- בחר קטגוריה --</option>
+        ${CATEGORIES.map(c=>`<option>${c}</option>`).join('')}
+      </select>
+      <label style="font-size:12px;color:#888">תיאור קצר (אופציונלי)</label>
+      <textarea id="new-book-desc" placeholder="על מה הספר? מה דעתך עליו?"></textarea>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="addBook()">הוסף</button>
+        <button class="btn" onclick="document.getElementById('edit-area').innerHTML=''">ביטול</button>
+      </div>
+    </div>`;
+  setTimeout(()=>document.getElementById('new-book').focus(),50);
+}
+
+async function addBook(){
+  const title=document.getElementById('new-book').value.trim();
+  if(!title) return;
+  const category=document.getElementById('new-book-cat').value||null;
+  const description=document.getElementById('new-book-desc').value.trim()||null;
+  await db('books','POST',{profile_id:currentUser.id,title,category,description});
+  await loadAll();
+  renderProfile();
+}
+
+async function removeBook(title){
+  if(!confirm('להסיר את הספר "'+title+'"?')) return;
+  const book=allBooks.find(b=>b.profile_id===currentUser.id&&b.title===title);
+  if(book) await db('books','DELETE',null,`?id=eq.${book.id}`);
+  await loadAll();
+  renderProfile();
+}
+
+let selectedType='השאלה';
+
+function openMyBookDetail(bookId){
+  const bookObj=allBooks.find(b=>b.id==bookId);
+  if(!bookObj) return;
+  const bc=gc(bookObj.title);
+  document.getElementById('modal-content').innerHTML=`
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:1rem">
+      <div class="book-circle" style="width:64px;height:64px;font-size:11px;background:${bc.bg};color:${bc.text};border-color:${bc.border};cursor:default;flex-shrink:0"><span>${bookObj.title}</span></div>
+      <div>
+        <div style="font-weight:700;font-size:17px;line-height:1.3">${bookObj.title}</div>
+        ${bookObj.category?`<span class="badge badge-blue" style="margin-top:4px;display:inline-block">${bookObj.category}</span>`:''}
+      </div>
+    </div>
+    ${bookObj.description?`<div style="background:#f9f7f4;border-radius:10px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:#555;line-height:1.6">${bookObj.description}</div>`:''}
+    <hr>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-danger" style="flex:1" onclick="closeModal();removeBook('${esc(bookObj.title)}')">🗑️ הסר ספר</button>
+      <button class="btn" style="flex:1" onclick="closeModal()">סגור</button>
+    </div>
+  `;
+  document.getElementById('book-modal').style.display='flex';
+}
+
+function openBookDetailModal(profId, bookTitle){
+  const prof=allProfiles.find(p=>p.id===profId);
+  if(!prof) return;
+  const bookObj=allBooks.find(b=>b.profile_id===profId&&b.title===bookTitle);
+  const bc=gc(bookTitle);
+  const isMine=profId===currentUser.id;
+  document.getElementById('modal-content').innerHTML=`
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:1rem">
+      <div class="book-circle" style="width:64px;height:64px;font-size:11px;background:${bc.bg};color:${bc.text};border-color:${bc.border};cursor:default;flex-shrink:0"><span>${bookTitle}</span></div>
+      <div>
+        <div style="font-weight:700;font-size:17px;line-height:1.3">${bookTitle}</div>
+        ${bookObj&&bookObj.category?`<span class="badge badge-blue" style="margin-top:4px;display:inline-block">${bookObj.category}</span>`:''}
+        <div style="font-size:12px;color:#888;margin-top:4px">אצל ${prof.name} • 📍 ${prof.address}</div>
+      </div>
+    </div>
+    ${bookObj&&bookObj.description?`
+      <div style="background:#f9f7f4;border-radius:10px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:#555;line-height:1.6">
+        ${bookObj.description}
+      </div>`:''}
+    ${!isMine?`
+      <hr>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="openBookModal('${esc(profId)}','${esc(bookTitle)}')">📨 שלח בקשה ל${prof.name}</button>
+    `:''}
+  `;
+  document.getElementById('book-modal').style.display='flex';
+}
+
+function openBookModal(profId,book){
+  const prof=allProfiles.find(p=>p.id===profId);
+  if(!prof) return;
+  const myBooks=getBooksOf(currentUser.id);
+  const bc=gc(book);
+  selectedType='השאלה';
+  document.getElementById('modal-content').innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.2rem">
+      <div class="book-circle" style="background:${bc.bg};color:${bc.text};border-color:${bc.border};cursor:default"><span>${book}</span></div>
+      <div>
+        <div style="font-weight:700;font-size:16px">${book}</div>
+        <div style="font-size:12px;color:#888">אצל ${prof.name}</div>
+        <div style="font-size:11px;color:#aaa">📍 ${prof.address}</div>
+      </div>
+    </div>
+    <hr>
+    <div class="section-title" style="margin-top:10px">סוג הבקשה</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="chip selected" id="chip-borrow" onclick="setType('השאלה')">📖 השאלה</button>
+      <button class="chip" id="chip-buy" onclick="setType('קנייה')">💰 קנייה</button>
+      <button class="chip" id="chip-swap" onclick="setType('החלפה')">🔄 החלפה</button>
+    </div>
+    <div id="swap-section" style="display:none;margin-bottom:10px">
+      <div class="section-title">הספר שאתה מציע בתמורה</div>
+      <select id="swap-book">${myBooks.length?myBooks.map(b=>`<option>${b}</option>`).join(''):'<option>אין ספרים באוסף</option>'}</select>
+    </div>
+    <div class="section-title">הערה (אופציונלי)</div>
+    <textarea id="req-note" placeholder="פרטים נוספים..."></textarea>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="sendReq('${esc(profId)}','${esc(book)}')">📨 שלח בקשה ל${prof.name}</button>`;
+  document.getElementById('book-modal').style.display='flex';
+}
+
+function setType(t){
+  selectedType=t;
+  const m={'השאלה':'borrow','קנייה':'buy','החלפה':'swap'};
+  Object.entries(m).forEach(([k,v])=>{
+    const el=document.getElementById('chip-'+v);
+    if(el) el.classList.toggle('selected',k===t);
+  });
+  document.getElementById('swap-section').style.display=t==='החלפה'?'block':'none';
+}
+
+async function sendReq(profId,book){
+  const note=document.getElementById('req-note').value.trim();
+  const swap=selectedType==='החלפה'?(document.getElementById('swap-book').value||''):'';
+  const fullNote=note+(swap?' [החלפה עם: '+swap+']':'');
+  const prof=allProfiles.find(p=>p.id===profId);
+  await db('requests','POST',{
+    id:'r'+Date.now(),
+    from_user:currentUser.id,
+    to_user:profId,
+    book,type:selectedType,
+    status:'pending',
+    note:fullNote
+  });
+  await loadAll();
+  closeModal();
+  updateNotif();
+  alert('✅ הבקשה נשלחה ל'+(prof?prof.name:profId)+'!');
+}
+
+function closeModal(){document.getElementById('book-modal').style.display='none';}
+document.getElementById('book-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+function renderRequests(){
+  const el=document.getElementById('requests-view');
+  const myRequests=allRequests.filter(r=>r.to_user===currentUser.id||r.from_user===currentUser.id);
+
+  // פעילות — ממתין או הצעה חוזרת
+  const activeIn=myRequests.filter(r=>r.to_user===currentUser.id&&(r.status==='pending'||r.status==='countered'));
+  const activeOut=myRequests.filter(r=>r.from_user===currentUser.id&&(r.status==='pending'||r.status==='countered'));
+
+  // היסטוריה — אושר או נדחה
+  const history=myRequests.filter(r=>r.status==='approved'||r.status==='rejected');
+
+  const sc={
+    pending:{l:'ממתין',c:'badge-orange'},
+    approved:{l:'אושר ✓',c:'badge-green'},
+    rejected:{l:'נדחה',c:'badge-red'},
+    countered:{l:'הצעה חוזרת',c:'badge-blue'}
+  };
+
+  function card(r,isIn,isHistory){
+    const otherId=isIn?r.from_user:r.to_user;
+    const other=allProfiles.find(p=>p.id===otherId)||{name:otherId,id:otherId};
+    const c=gc(other.id);
+    const av=other.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+    const s=sc[r.status]||{l:r.status,c:'badge-blue'};
+    let actions='';
+    if(isIn&&r.status==='pending'&&!isHistory){
+      actions=`<div class="req-actions">
+        <button class="btn btn-primary" onclick="handleReq('${r.id}','approved')">✅ אשר</button>
+        <button class="btn btn-danger" onclick="handleReq('${r.id}','rejected')">❌ דחה</button>
+        <button class="btn" onclick="toggleCounter('${r.id}')">💬 הצע חזרה</button>
+      </div>
+      <div id="counter-${r.id}" style="display:none;margin-top:10px">
+        <textarea id="cnote-${r.id}" placeholder="כתוב הצעה חוזרת..."></textarea>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="sendCounter('${r.id}','${esc(otherId)}','${esc(r.book)}','${esc(r.type)}')">שלח</button>
+          <button class="btn" onclick="toggleCounter('${r.id}')">ביטול</button>
+        </div>
+      </div>`;
+    }
+    const when=r.created_at?new Date(r.created_at).toLocaleDateString('he-IL'):'';
+    const opacity=isHistory?'opacity:0.7;':'';
+    return`<div class="req-card" style="${opacity}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div class="avatar" style="width:34px;height:34px;font-size:12px;background:${c.bg};color:${c.text};border:2px solid ${c.border}">${av}</div>
+        <div style="flex:1">
+          <span style="font-weight:600">${other.name}</span>
+          <span style="font-size:12px;color:#888"> • "${r.book}"</span>
+        </div>
+        <span class="badge ${s.c}">${s.l}</span>
+      </div>
+      <div style="font-size:12px;color:#888">
+        <span class="badge badge-blue" style="margin-left:6px">${r.type}</span>
+        ${r.note||''}
+        ${when?`<span style="color:#ccc;margin-right:6px"> • ${when}</span>`:''}
+      </div>
+      ${actions}
+    </div>`;
+  }
+
+  const historyHtml=history.length?`
+    <div class="card" style="margin-top:0.5rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;cursor:pointer" onclick="toggleHistory()">
+        <div style="font-weight:700">🗂️ היסטוריה (${history.length})</div>
+        <span id="history-arrow" style="color:#aaa;font-size:18px">›</span>
+      </div>
+      <div id="history-list" style="display:none">
+        ${history.map(r=>{
+          const isIn=r.to_user===currentUser.id;
+          return card(r,isIn,true);
+        }).join('')}
+      </div>
+    </div>`:'' ;
+
+  el.innerHTML=`
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:12px">📥 בקשות נכנסות (${activeIn.length})</div>
+      ${activeIn.length?activeIn.map(r=>card(r,true,false)).join(''):'<div class="empty-state">אין בקשות פעילות</div>'}
+    </div>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:12px">📤 בקשות יוצאות (${activeOut.length})</div>
+      ${activeOut.length?activeOut.map(r=>card(r,false,false)).join(''):'<div class="empty-state">לא שלחת בקשות פעילות</div>'}
+    </div>
+    ${historyHtml}`;
+}
+
+function toggleHistory(){
+  const list=document.getElementById('history-list');
+  const arrow=document.getElementById('history-arrow');
+  const open=list.style.display==='none';
+  list.style.display=open?'block':'none';
+  arrow.style.transform=open?'rotate(90deg)':'';
+}
+
+async function handleReq(id,status){
+  await db('requests','PATCH',{status},`?id=eq.${id}`);
+  await loadAll();
+  renderRequests();
+  updateNotif();
+}
+
+function toggleCounter(id){
+  const el=document.getElementById('counter-'+id);
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+
+async function sendCounter(id,toUser,book,type){
+  const note=document.getElementById('cnote-'+id).value.trim();
+  if(!note) return;
+  await db('requests','PATCH',{status:'countered'},`?id=eq.${id}`);
+  await db('requests','POST',{
+    id:'r'+Date.now(),
+    from_user:currentUser.id,
+    to_user:toUser,
+    book,type,
+    status:'pending',
+    note:'הצעה חוזרת: '+note
+  });
+  await loadAll();
+  renderRequests();
+  updateNotif();
+}
+
+function renderMap(){
+  const el=document.getElementById('map-view');
+  const minLat=30.6,maxLat=33.4,minLng=34.3,maxLng=35.7;
+  const W=340,H=240;
+  function px(lng){return Math.round(((lng-minLng)/(maxLng-minLng))*W);}
+  function py(lat){return Math.round(H-((lat-minLat)/(maxLat-minLat))*H);}
+  const dots=allProfiles.map(p=>({p,x:px(p.lng||34.8),y:py(p.lat||32.0),c:gc(p.id)}));
+
+  el.innerHTML=`
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:10px">🗺️ מפת המשתמשים</div>
+      <div class="map-wrap">
+        <svg width="100%" height="240" viewBox="0 0 ${W} ${H}" style="position:absolute;inset:0">
+          <rect width="${W}" height="${H}" fill="#d4e9c8"/>
+          ${dots.map(d=>`
+            <circle cx="${d.x}" cy="${d.y}" r="13" fill="${d.c.bg}" stroke="${d.c.border}" stroke-width="2.5" style="cursor:pointer" onclick="mapClick('${esc(d.p.id)}')"/>
+            <text x="${d.x}" y="${d.y+4}" text-anchor="middle" font-size="8" font-weight="bold" fill="${d.c.text}" pointer-events="none" font-family="Heebo,sans-serif">${d.p.name.split(' ')[0].slice(0,5)}</text>
+          `).join('')}
+        </svg>
+      </div>
+      <div id="map-books-detail"></div>
+      <div class="section-title" style="margin-top:10px">כל המשתמשים (${allProfiles.length})</div>
+      ${allProfiles.map(p=>{
+        const c=gc(p.id);
+        const av=p.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+        const books=getBooksOf(p.id);
+        return`<div class="profile-row" onclick="mapClick('${esc(p.id)}')">
+          <div class="avatar" style="background:${c.bg};color:${c.text};border:2px solid ${c.border}">${av}</div>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:14px">${p.name}${p.id===currentUser.id?' (אתה)':''}</div>
+            <div style="font-size:12px;color:#888">📍 ${p.address} • 📚 ${books.length} ספרים</div>
+          </div>
+          <span style="color:#ccc">›</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function mapClick(profId){
+  const prof=allProfiles.find(p=>p.id===profId);
+  if(!prof) return;
+  const isMine=profId===currentUser.id;
+  const books=getBooksOf(profId);
+  const el=document.getElementById('map-books-detail');
+  el.innerHTML=`
+    <div class="card" style="margin-top:10px">
+      <div style="font-weight:700;margin-bottom:8px">${prof.name}${isMine?' (אתה)':''}</div>
+      <div style="font-size:13px;color:#666;margin-bottom:4px">📍 ${prof.address}</div>
+      ${prof.bio?`<p style="font-size:13px;color:#888;margin-bottom:10px">${prof.bio}</p>`:''}
+      <div class="section-title">ספרים (${books.length})</div>
+      <div class="books-grid">${books.map(b=>{
+        const bc=gc(b);
+        return`<div class="book-circle" style="background:${bc.bg};color:${bc.text};border-color:${bc.border};${isMine?'cursor:default':''}" ${!isMine?`onclick="openBookDetailModal('${esc(profId)}','${esc(b)}')"`:''} ><span>${b}</span></div>`;
+      }).join('')}</div>
+      ${!isMine&&books.length?'<p style="font-size:11px;color:#bbb;margin-top:8px">לחץ על ספר לשלוח בקשה</p>':''}
+    </div>`;
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function renderSearch(){doSearch();}
+
+setInterval(async()=>{
+  if(!currentUser) return;
+  try{
+    await loadAll();
+    updateNotif();
+    if(document.getElementById('page-requests').classList.contains('active')) renderRequests();
+  }catch(e){}
+},15000);
+
+init();
+</script>
+</body>
+</html>
