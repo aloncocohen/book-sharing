@@ -995,7 +995,11 @@ function renderSearch(){doSearch();}
 
 // ===== אירועים =====
 
+let isCreatingEvent=false;
+
 function renderEvents(){
+  // אם הטופס פתוח — לא מרנדר מחדש
+  if(isCreatingEvent) return;
   const el=document.getElementById('events-view');
   const myEvents=allEvents.filter(e=>e.owner_id===currentUser.id);
   const joinedEvents=allEvents.filter(e=>
@@ -1055,6 +1059,7 @@ function renderEvents(){
 }
 
 function showCreateEvent(){
+  isCreatingEvent=true;
   document.getElementById('create-event-area').innerHTML=`
     <div class="card">
       <div style="font-weight:700;margin-bottom:12px">✨ צור אירוע חדש</div>
@@ -1066,10 +1071,15 @@ function showCreateEvent(){
       <input id="ev-loc" placeholder="עיר, כתובת...">
       <div style="display:flex;gap:8px">
         <button class="btn btn-primary" onclick="createEvent()">✨ צור אירוע</button>
-        <button class="btn" onclick="document.getElementById('create-event-area').innerHTML=''">ביטול</button>
+        <button class="btn" onclick="cancelCreateEvent()">ביטול</button>
       </div>
     </div>`;
   setTimeout(()=>document.getElementById('ev-name').focus(),50);
+}
+
+function cancelCreateEvent(){
+  isCreatingEvent=false;
+  document.getElementById('create-event-area').innerHTML='';
 }
 
 async function createEvent(){
@@ -1079,8 +1089,8 @@ async function createEvent(){
   const loc=document.getElementById('ev-loc').value.trim();
   const id='ev'+Date.now();
   await db('events','POST',{id,owner_id:currentUser.id,name,description:desc,location:loc,lat:currentUser.lat,lng:currentUser.lng});
-  // הוסף את היוצר כחבר
   await db('event_members','POST',{event_id:id,profile_id:currentUser.id});
+  isCreatingEvent=false;
   await loadAll();
   renderEvents();
 }
