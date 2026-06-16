@@ -1200,7 +1200,11 @@ setInterval(async()=>{
     await loadAll();
     updateNotif();
     if(document.getElementById('page-requests').classList.contains('active')) renderRequests();
-    if(document.getElementById('page-events').classList.contains('active')) renderEvents();
+    if(document.getElementById('page-events').classList.contains('active')){
+      // לא מרנדר אם הטופס יצירת אירוע פתוח
+      const formOpen=document.getElementById('create-event-area').innerHTML.trim()!=='';
+      if(!formOpen) renderEvents();
+    }
   }catch(e){}
 },15000);
 
