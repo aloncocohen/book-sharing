@@ -1070,7 +1070,7 @@ function showCreateEvent(){
       <label style="font-size:12px;color:#888">מיקום (אופציונלי)</label>
       <input id="ev-loc" placeholder="עיר, כתובת...">
       <div style="display:flex;gap:8px">
-        <button class="btn btn-primary" onclick="createEvent()">✨ צור אירוע</button>
+        <button class="btn btn-primary" onclick="createNewEvent()">✨ צור אירוע</button>
         <button class="btn" onclick="cancelCreateEvent()">ביטול</button>
       </div>
     </div>`;
@@ -1082,7 +1082,7 @@ function cancelCreateEvent(){
   document.getElementById('create-event-area').innerHTML='';
 }
 
-async function createEvent(){
+async function createNewEvent(){
   const name=(document.getElementById('ev-name').value||'').trim();
   if(!name){alert('נא להזין שם לאירוע');return;}
   const desc=(document.getElementById('ev-desc').value||'').trim();
