@@ -178,6 +178,7 @@ hr{border:none;border-top:1px solid #e5e2db;margin:10px 0}
     <button class="active" onclick="showPage('search')">🔍 חיפוש</button>
     <button onclick="showPage('profile')">👤 הפרופיל</button>
     <button onclick="showPage('requests')"><span id="notif-indicator"></span>🔔 בקשות</button>
+    <button onclick="showPage('events')">🎉 אירועים</button>
     <button onclick="showPage('map')">🗺️ מפה</button>
     <button onclick="logout()" style="flex:0;color:#c0392b;padding:9px 10px">יציאה</button>
   </div>
@@ -189,6 +190,7 @@ hr{border:none;border-top:1px solid #e5e2db;margin:10px 0}
   </div>
   <div id="page-profile" class="page"><div id="profile-view"></div></div>
   <div id="page-requests" class="page"><div id="requests-view"></div></div>
+  <div id="page-events" class="page"><div id="events-view"></div></div>
   <div id="page-map" class="page"><div id="map-view"></div></div>
 </div>
 
@@ -250,28 +252,38 @@ let currentUser=null;
 let allProfiles=[];
 let allBooks=[];
 let allRequests=[];
+let allEvents=[];
+let allEventMembers=[];
 
 async function init(){
   const saved=localStorage.getItem('bk_user');
+  // בדיקה אם הגיעו דרך קישור אירוע
+  const urlParams=new URLSearchParams(window.location.search);
+  const joinEventId=urlParams.get('join');
   if(saved){
     try{
       const profiles=await db('profiles','GET',null,`?id=eq.${encId(saved)}&select=id,name,address,bio,lat,lng`);
       if(profiles.length){
         currentUser=profiles[0];
         await loadAll();
+        if(joinEventId) await joinEventById(joinEventId);
         showApp();
+        if(joinEventId) showPage('events');
         return;
       }
     }catch(e){}
   }
   document.getElementById('loading-screen').style.display='none';
   document.getElementById('login-page').style.display='block';
+  if(joinEventId) localStorage.setItem('pending_join_event',joinEventId);
 }
 
 async function loadAll(){
   allProfiles=await db('profiles','GET',null,'?order=name&select=id,name,address,bio,lat,lng');
   allBooks=await db('books','GET',null,'?order=id');
   allRequests=await db('requests','GET',null,'?order=created_at.desc');
+  allEvents=await db('events','GET',null,'?order=created_at.desc');
+  allEventMembers=await db('event_members','GET',null,'?order=joined_at');
 }
 
 function showApp(){
@@ -279,6 +291,7 @@ function showApp(){
   document.getElementById('login-page').style.display='none';
   document.getElementById('main-app').style.display='block';
   document.getElementById('welcome-msg').textContent='שלום, '+currentUser.name+' 👋';
+  checkPendingJoin();
   render();
 }
 
@@ -443,7 +456,7 @@ function showPage(p){
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav button').forEach(el=>el.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
-  const idx={search:0,profile:1,requests:2,map:3}[p];
+  const idx={search:0,profile:1,requests:2,events:3,map:4}[p];
   document.querySelectorAll('.nav button')[idx].classList.add('active');
   render(p);
 }
@@ -453,6 +466,7 @@ function render(p){
   if(!p||p==='search') renderSearch();
   if(!p||p==='profile') renderProfile();
   if(!p||p==='requests') renderRequests();
+  if(!p||p==='events') renderEvents();
   if(!p||p==='map') renderMap();
 }
 
@@ -979,12 +993,214 @@ function mapClick(profId){
 
 function renderSearch(){doSearch();}
 
+// ===== אירועים =====
+
+function renderEvents(){
+  const el=document.getElementById('events-view');
+  const myEvents=allEvents.filter(e=>e.owner_id===currentUser.id);
+  const joinedEvents=allEvents.filter(e=>
+    e.owner_id!==currentUser.id &&
+    allEventMembers.some(m=>m.event_id===e.id&&m.profile_id===currentUser.id)
+  );
+  const allPublicEvents=allEvents.filter(e=>e.owner_id!==currentUser.id);
+
+  function eventCard(ev,isOwner){
+    const members=allEventMembers.filter(m=>m.event_id===ev.id);
+    const owner=allProfiles.find(p=>p.id===ev.owner_id)||{name:ev.owner_id};
+    const isMember=members.some(m=>m.profile_id===currentUser.id);
+    const c=gc(ev.id);
+    const joinLink=`${window.location.origin}${window.location.pathname}?join=${ev.id}`;
+    return`<div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-weight:700;font-size:16px">🎉 ${ev.name}</div>
+        <span class="badge badge-blue">${members.length} משתתפים</span>
+      </div>
+      ${ev.description?`<p style="font-size:13px;color:#666;margin-bottom:8px">${ev.description}</p>`:''}
+      ${ev.location?`<div style="font-size:12px;color:#888;margin-bottom:8px">📍 ${ev.location}</div>`:''}
+      <div style="font-size:12px;color:#aaa;margin-bottom:10px">נוצר על ידי ${owner.name}</div>
+      ${isOwner?`
+        <div style="background:#f5f3ee;border-radius:8px;padding:8px 10px;margin-bottom:10px">
+          <div style="font-size:11px;color:#888;margin-bottom:4px">🔗 קישור הצטרפות:</div>
+          <div style="font-size:12px;color:#1a1a1a;word-break:break-all">${joinLink}</div>
+          <button class="btn" style="margin-top:6px;padding:5px 10px;font-size:12px" onclick="copyLink('${esc(joinLink)}')">📋 העתק קישור</button>
+        </div>
+        <button class="btn" onclick="showEventMembers('${ev.id}')">👥 רשימת משתתפים</button>
+        <button class="btn" style="margin-right:6px" onclick="showEventMap('${ev.id}')">🗺️ מפת האירוע</button>
+        <button class="btn btn-danger" style="margin-right:6px" onclick="deleteEvent('${ev.id}')">🗑️ מחק</button>
+      `:`
+        <div style="display:flex;gap:8px">
+          ${!isMember?`<button class="btn btn-primary" onclick="joinEvent('${ev.id}')">+ הצטרף</button>`:`<span class="badge badge-green" style="padding:6px 12px">✓ מצטרף</span>`}
+          <button class="btn" onclick="showEventMembers('${ev.id}')">👥 משתתפים</button>
+          <button class="btn" onclick="showEventMap('${ev.id}')">🗺️ מפה</button>
+          ${isMember?`<button class="btn btn-danger" onclick="leaveEvent('${ev.id}')">עזוב</button>`:''}
+        </div>
+      `}
+    </div>`;
+  }
+
+  el.innerHTML=`
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span style="font-weight:700">🎉 האירועים שלי (${myEvents.length})</span>
+        <button class="btn btn-primary" onclick="showCreateEvent()">+ צור אירוע</button>
+      </div>
+      ${myEvents.length?myEvents.map(e=>eventCard(e,true)).join(''):'<div class="empty-state">עדיין לא יצרת אירועים</div>'}
+    </div>
+    <div id="create-event-area"></div>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:10px">🌐 כל האירועים (${allPublicEvents.length})</div>
+      ${allPublicEvents.length?allPublicEvents.map(e=>eventCard(e,false)).join(''):'<div class="empty-state">אין אירועים כרגע</div>'}
+    </div>
+    <div id="event-detail-area"></div>`;
+}
+
+function showCreateEvent(){
+  document.getElementById('create-event-area').innerHTML=`
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:12px">✨ צור אירוע חדש</div>
+      <label style="font-size:12px;color:#888">שם האירוע *</label>
+      <input id="ev-name" placeholder="שם האירוע">
+      <label style="font-size:12px;color:#888">תיאור (אופציונלי)</label>
+      <textarea id="ev-desc" placeholder="על מה האירוע?"></textarea>
+      <label style="font-size:12px;color:#888">מיקום (אופציונלי)</label>
+      <input id="ev-loc" placeholder="עיר, כתובת...">
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="createEvent()">✨ צור אירוע</button>
+        <button class="btn" onclick="document.getElementById('create-event-area').innerHTML=''">ביטול</button>
+      </div>
+    </div>`;
+  setTimeout(()=>document.getElementById('ev-name').focus(),50);
+}
+
+async function createEvent(){
+  const name=document.getElementById('ev-name').value.trim();
+  if(!name){alert('נא להזין שם לאירוע');return;}
+  const desc=document.getElementById('ev-desc').value.trim();
+  const loc=document.getElementById('ev-loc').value.trim();
+  const id='ev'+Date.now();
+  await db('events','POST',{id,owner_id:currentUser.id,name,description:desc,location:loc,lat:currentUser.lat,lng:currentUser.lng});
+  // הוסף את היוצר כחבר
+  await db('event_members','POST',{event_id:id,profile_id:currentUser.id});
+  await loadAll();
+  renderEvents();
+}
+
+async function joinEvent(eventId){
+  const already=allEventMembers.some(m=>m.event_id===eventId&&m.profile_id===currentUser.id);
+  if(already) return;
+  await db('event_members','POST',{event_id:eventId,profile_id:currentUser.id});
+  await loadAll();
+  renderEvents();
+}
+
+async function joinEventById(eventId){
+  try{
+    const already=allEventMembers.some(m=>m.event_id===eventId&&m.profile_id===currentUser.id);
+    if(!already) await db('event_members','POST',{event_id:eventId,profile_id:currentUser.id});
+    await loadAll();
+  }catch(e){}
+}
+
+async function leaveEvent(eventId){
+  if(!confirm('לעזוב את האירוע?')) return;
+  const member=allEventMembers.find(m=>m.event_id===eventId&&m.profile_id===currentUser.id);
+  if(member) await db('event_members','DELETE',null,`?id=eq.${member.id}`);
+  await loadAll();
+  renderEvents();
+}
+
+async function deleteEvent(eventId){
+  if(!confirm('למחוק את האירוע לצמיתות?')) return;
+  await db('events','DELETE',null,`?id=eq.${eventId}`);
+  await loadAll();
+  renderEvents();
+}
+
+function copyLink(link){
+  navigator.clipboard.writeText(link).then(()=>alert('✅ הקישור הועתק!'));
+}
+
+function showEventMembers(eventId){
+  const ev=allEvents.find(e=>e.id===eventId);
+  const members=allEventMembers.filter(m=>m.event_id===eventId);
+  const el=document.getElementById('event-detail-area');
+  el.innerHTML=`
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:12px">👥 משתתפי האירוע "${ev.name}" (${members.length})</div>
+      ${members.map(m=>{
+        const prof=allProfiles.find(p=>p.id===m.profile_id)||{name:m.profile_id,id:m.profile_id};
+        const c=gc(prof.id);
+        const av=prof.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+        return`<div class="profile-row" onclick="openProfileModal('${esc(prof.id)}')">
+          <div class="avatar" style="background:${c.bg};color:${c.text};border:2px solid ${c.border}">${av}</div>
+          <div style="flex:1">
+            <div style="font-weight:600">${prof.name}</div>
+            <div style="font-size:12px;color:#888">📍 ${prof.address||''}</div>
+          </div>
+        </div>`;
+      }).join('')}
+      <button class="btn" style="margin-top:8px" onclick="document.getElementById('event-detail-area').innerHTML=''">סגור</button>
+    </div>`;
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function showEventMap(eventId){
+  const ev=allEvents.find(e=>e.id===eventId);
+  const members=allEventMembers.filter(m=>m.event_id===eventId);
+  const memberProfiles=members.map(m=>allProfiles.find(p=>p.id===m.profile_id)).filter(Boolean);
+  const el=document.getElementById('event-detail-area');
+
+  const minLat=30.6,maxLat=33.4,minLng=34.3,maxLng=35.7;
+  const W=340,H=220;
+  function px(lng){return Math.round(((lng-minLng)/(maxLng-minLng))*W);}
+  function py(lat){return Math.round(H-((lat-minLat)/(maxLat-minLat))*H);}
+
+  el.innerHTML=`
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:10px">🗺️ מפת האירוע "${ev.name}"</div>
+      <div class="map-wrap">
+        <svg width="100%" height="220" viewBox="0 0 ${W} ${H}" style="position:absolute;inset:0">
+          <rect width="${W}" height="${H}" fill="#d4e9c8"/>
+          ${memberProfiles.map(p=>{
+            const c=gc(p.id);
+            const x=px(p.lng||34.8), y=py(p.lat||32.0);
+            return`<circle cx="${x}" cy="${y}" r="13" fill="${c.bg}" stroke="${c.border}" stroke-width="2.5" style="cursor:pointer" onclick="openProfileModal('${esc(p.id)}')"/>
+            <text x="${x}" y="${y+4}" text-anchor="middle" font-size="8" font-weight="bold" fill="${c.text}" pointer-events="none" font-family="Heebo,sans-serif">${p.name.split(' ')[0].slice(0,5)}</text>`;
+          }).join('')}
+        </svg>
+      </div>
+      <div class="section-title" style="margin-top:8px">משתתפים (${memberProfiles.length})</div>
+      ${memberProfiles.map(p=>{
+        const c=gc(p.id);
+        const av=p.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+        return`<div class="profile-row" onclick="openProfileModal('${esc(p.id)}')">
+          <div class="avatar" style="background:${c.bg};color:${c.text};border:2px solid ${c.border}">${av}</div>
+          <div><div style="font-weight:600">${p.name}</div><div style="font-size:12px;color:#888">📍 ${p.address||''}</div></div>
+        </div>`;
+      }).join('')}
+      <button class="btn" style="margin-top:8px" onclick="document.getElementById('event-detail-area').innerHTML=''">סגור</button>
+    </div>`;
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// בדיקה אם הגיעו דרך קישור אחרי כניסה
+async function checkPendingJoin(){
+  const pending=localStorage.getItem('pending_join_event');
+  if(pending&&currentUser){
+    localStorage.removeItem('pending_join_event');
+    await joinEventById(pending);
+    showPage('events');
+    alert('✅ הצטרפת לאירוע בהצלחה!');
+  }
+}
+
 setInterval(async()=>{
   if(!currentUser) return;
   try{
     await loadAll();
     updateNotif();
     if(document.getElementById('page-requests').classList.contains('active')) renderRequests();
+    if(document.getElementById('page-events').classList.contains('active')) renderEvents();
   }catch(e){}
 },15000);
 
