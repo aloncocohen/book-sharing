@@ -1083,16 +1083,23 @@ function cancelCreateEvent(){
 }
 
 async function createEvent(){
-  const name=document.getElementById('ev-name').value.trim();
+  const name=(document.getElementById('ev-name').value||'').trim();
   if(!name){alert('נא להזין שם לאירוע');return;}
-  const desc=document.getElementById('ev-desc').value.trim();
-  const loc=document.getElementById('ev-loc').value.trim();
-  const id='ev'+Date.now();
-  await db('events','POST',{id,owner_id:currentUser.id,name,description:desc,location:loc,lat:currentUser.lat,lng:currentUser.lng});
-  await db('event_members','POST',{event_id:id,profile_id:currentUser.id});
-  isCreatingEvent=false;
-  await loadAll();
-  renderEvents();
+  const desc=(document.getElementById('ev-desc').value||'').trim();
+  const loc=(document.getElementById('ev-loc').value||'').trim();
+  const btn=document.querySelector('#create-event-area .btn-primary');
+  if(btn){btn.textContent='...';btn.disabled=true;}
+  try{
+    const id='ev'+Date.now();
+    await db('events','POST',{id,owner_id:currentUser.id,name,description:desc||null,location:loc||null,lat:currentUser.lat||32.0,lng:currentUser.lng||34.8});
+    await db('event_members','POST',{event_id:id,profile_id:currentUser.id});
+    isCreatingEvent=false;
+    await loadAll();
+    renderEvents();
+  }catch(e){
+    alert('שגיאה ביצירת האירוע: '+e.message);
+    if(btn){btn.textContent='✨ צור אירוע';btn.disabled=false;}
+  }
 }
 
 async function joinEvent(eventId){
