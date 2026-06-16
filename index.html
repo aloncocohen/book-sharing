@@ -84,37 +84,87 @@ hr{border:none;border-top:1px solid #e5e2db;margin:10px 0}
       <div class="tabs">
         <button class="active" id="tab-login" onclick="switchTab('login')">כניסה</button>
         <button id="tab-register" onclick="switchTab('register')">הרשמה</button>
+        <button id="tab-forgot" onclick="switchTab('forgot')">שכחתי סיסמה</button>
       </div>
 
-      <label style="font-size:12px;color:#888">שם משתמש</label>
-      <input id="l-id" placeholder="ללא רווחים (עברית או אנגלית)" oninput="this.value=this.value.replace(/\s/g,'')">
+      <!-- כניסה / הרשמה -->
+      <div id="login-register-section">
+        <label style="font-size:12px;color:#888">שם משתמש</label>
+        <input id="l-id" placeholder="ללא רווחים (עברית או אנגלית)" oninput="this.value=this.value.replace(/\s/g,'')">
 
-      <div id="register-fields" style="display:none">
-        <label style="font-size:12px;color:#888">שם מלא</label>
-        <input id="l-name" placeholder="השם שיופיע לאחרים">
-        <label style="font-size:12px;color:#888">כתובת מגורים</label>
-        <input id="l-address" placeholder="עיר, רחוב ומספר">
-        <label style="font-size:12px;color:#888">קצת עלייך (אופציונלי)</label>
-        <textarea id="l-bio" placeholder="אהבות קריאה, ז'אנרים מועדפים..."></textarea>
-      </div>
+        <div id="register-fields" style="display:none">
+          <label style="font-size:12px;color:#888">שם מלא</label>
+          <input id="l-name" placeholder="השם שיופיע לאחרים">
+          <label style="font-size:12px;color:#888">כתובת מגורים</label>
+          <input id="l-address" placeholder="עיר, רחוב ומספר">
+          <label style="font-size:12px;color:#888">קצת עלייך (אופציונלי)</label>
+          <textarea id="l-bio" placeholder="אהבות קריאה, ז'אנרים מועדפים..."></textarea>
+          <label style="font-size:12px;color:#888">שאלת אבטחה</label>
+          <select id="l-secq">
+            <option value="">-- בחר שאלה --</option>
+            <option>מה שמו הפרטי של הסבא מצד אבא?</option>
+            <option>מה שמו הפרטי של הסבא מצד אמא?</option>
+            <option>מה שמה הפרטי של הסבתא מצד אבא?</option>
+            <option>מה שמה הפרטי של הסבתא מצד אמא?</option>
+            <option>מה שם החיית המחמד הראשונה שלך?</option>
+            <option>באיזה רחוב גרת בילדותך?</option>
+            <option>מה שם בית הספר הראשון שלמדת בו?</option>
+            <option>מה שם העיר שנולדת בה?</option>
+          </select>
+          <label style="font-size:12px;color:#888">תשובה לשאלת האבטחה</label>
+          <input id="l-seca" placeholder="התשובה (לא תוצג לאחרים)">
+        </div>
 
-      <label style="font-size:12px;color:#888">סיסמה</label>
-      <div class="input-wrap">
-        <input id="l-pass" type="password" placeholder="לפחות 6 תווים" oninput="checkStrength()">
-        <button class="eye-btn" onclick="togglePass('l-pass',this)" type="button">👁</button>
-      </div>
-      <div id="strength-bar" class="strength-bar" style="display:none;width:0%"></div>
-
-      <div id="register-pass-confirm" style="display:none">
-        <label style="font-size:12px;color:#888">אימות סיסמה</label>
+        <label style="font-size:12px;color:#888">סיסמה</label>
         <div class="input-wrap">
-          <input id="l-pass2" type="password" placeholder="הקלד שוב את הסיסמה">
-          <button class="eye-btn" onclick="togglePass('l-pass2',this)" type="button">👁</button>
+          <input id="l-pass" type="password" placeholder="לפחות 6 תווים" oninput="checkStrength()">
+          <button class="eye-btn" onclick="togglePass('l-pass',this)" type="button">👁</button>
+        </div>
+        <div id="strength-bar" class="strength-bar" style="display:none;width:0%"></div>
+
+        <div id="register-pass-confirm" style="display:none">
+          <label style="font-size:12px;color:#888">אימות סיסמה</label>
+          <div class="input-wrap">
+            <input id="l-pass2" type="password" placeholder="הקלד שוב את הסיסמה">
+            <button class="eye-btn" onclick="togglePass('l-pass2',this)" type="button">👁</button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" style="width:100%;margin-top:4px" id="login-btn" onclick="doLogin()">כניסה</button>
+        <p id="login-err" style="color:#c0392b;font-size:13px;margin-top:8px;text-align:center;min-height:18px"></p>
+      </div>
+
+      <!-- שכחתי סיסמה -->
+      <div id="forgot-section" style="display:none">
+        <div id="forgot-step1">
+          <label style="font-size:12px;color:#888">שם משתמש</label>
+          <input id="f-id" placeholder="הזן את שם המשתמש שלך" oninput="this.value=this.value.replace(/\s/g,'')">
+          <button class="btn btn-primary" style="width:100%" onclick="loadSecurityQuestion()">המשך</button>
+          <p id="forgot-err" style="color:#c0392b;font-size:13px;margin-top:8px;text-align:center;min-height:18px"></p>
+        </div>
+        <div id="forgot-step2" style="display:none">
+          <div style="background:#f9f7f4;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:14px;font-weight:500" id="f-question-text"></div>
+          <label style="font-size:12px;color:#888">תשובה</label>
+          <input id="f-answer" placeholder="הזן את תשובתך">
+          <button class="btn btn-primary" style="width:100%" onclick="verifySecurityAnswer()">אמת תשובה</button>
+          <p id="forgot-err2" style="color:#c0392b;font-size:13px;margin-top:8px;text-align:center;min-height:18px"></p>
+        </div>
+        <div id="forgot-step3" style="display:none">
+          <div class="alert" style="background:#e8f5e9;color:#2e7d32;padding:10px;border-radius:8px;margin-bottom:12px;font-size:13px">✅ התשובה נכונה! קבע סיסמה חדשה</div>
+          <label style="font-size:12px;color:#888">סיסמה חדשה</label>
+          <div class="input-wrap">
+            <input id="f-newpass" type="password" placeholder="לפחות 6 תווים">
+            <button class="eye-btn" onclick="togglePass('f-newpass',this)" type="button">👁</button>
+          </div>
+          <label style="font-size:12px;color:#888">אימות סיסמה</label>
+          <div class="input-wrap">
+            <input id="f-newpass2" type="password" placeholder="הקלד שוב">
+            <button class="eye-btn" onclick="togglePass('f-newpass2',this)" type="button">👁</button>
+          </div>
+          <button class="btn btn-primary" style="width:100%" onclick="resetPassword()">שמור סיסמה חדשה</button>
+          <p id="forgot-err3" style="color:#c0392b;font-size:13px;margin-top:8px;text-align:center;min-height:18px"></p>
         </div>
       </div>
-
-      <button class="btn btn-primary" style="width:100%;margin-top:4px" id="login-btn" onclick="doLogin()">כניסה</button>
-      <p id="login-err" style="color:#c0392b;font-size:13px;margin-top:8px;text-align:center;min-height:18px"></p>
     </div>
   </div>
 </div>
@@ -233,16 +283,70 @@ function showApp(){
 }
 
 let isRegister=false;
+let forgotUserId=null;
 
 function switchTab(t){
   isRegister=t==='register';
-  document.getElementById('tab-login').classList.toggle('active',!isRegister);
-  document.getElementById('tab-register').classList.toggle('active',isRegister);
-  document.getElementById('register-fields').style.display=isRegister?'block':'none';
-  document.getElementById('register-pass-confirm').style.display=isRegister?'block':'none';
-  document.getElementById('strength-bar').style.display=isRegister?'block':'none';
-  document.getElementById('login-btn').textContent=isRegister?'הרשמה':'כניסה';
-  document.getElementById('login-err').textContent='';
+  const isForgot=t==='forgot';
+  ['login','register','forgot'].forEach(x=>{
+    document.getElementById('tab-'+x).classList.toggle('active',t===x);
+  });
+  document.getElementById('login-register-section').style.display=isForgot?'none':'block';
+  document.getElementById('forgot-section').style.display=isForgot?'block':'none';
+  if(!isForgot){
+    document.getElementById('register-fields').style.display=isRegister?'block':'none';
+    document.getElementById('register-pass-confirm').style.display=isRegister?'block':'none';
+    document.getElementById('strength-bar').style.display=isRegister?'block':'none';
+    document.getElementById('login-btn').textContent=isRegister?'הרשמה':'כניסה';
+    document.getElementById('login-err').textContent='';
+  }
+  // איפוס שלבי שכחתי סיסמה
+  if(isForgot){
+    document.getElementById('forgot-step1').style.display='block';
+    document.getElementById('forgot-step2').style.display='none';
+    document.getElementById('forgot-step3').style.display='none';
+    document.getElementById('f-id').value='';
+    forgotUserId=null;
+  }
+}
+
+async function loadSecurityQuestion(){
+  const id=document.getElementById('f-id').value.trim().replace(/\s/g,'');
+  if(!id){document.getElementById('forgot-err').textContent='נא להזין שם משתמש';return;}
+  try{
+    const profiles=await db('profiles','GET',null,`?id=eq.${encId(id)}&select=id,security_question`);
+    if(!profiles.length){document.getElementById('forgot-err').textContent='שם משתמש לא נמצא';return;}
+    if(!profiles[0].security_question){document.getElementById('forgot-err').textContent='למשתמש זה לא הוגדרה שאלת אבטחה';return;}
+    forgotUserId=id;
+    document.getElementById('f-question-text').textContent='🔐 '+profiles[0].security_question;
+    document.getElementById('forgot-step1').style.display='none';
+    document.getElementById('forgot-step2').style.display='block';
+  }catch(e){document.getElementById('forgot-err').textContent='שגיאה: '+e.message;}
+}
+
+async function verifySecurityAnswer(){
+  const answer=document.getElementById('f-answer').value.trim().toLowerCase();
+  if(!answer){document.getElementById('forgot-err2').textContent='נא להזין תשובה';return;}
+  try{
+    const profiles=await db('profiles','GET',null,`?id=eq.${encId(forgotUserId)}&select=security_answer`);
+    const correct=(profiles[0].security_answer||'').trim().toLowerCase();
+    if(answer!==correct){document.getElementById('forgot-err2').textContent='תשובה שגויה, נסה שנית';return;}
+    document.getElementById('forgot-step2').style.display='none';
+    document.getElementById('forgot-step3').style.display='block';
+  }catch(e){document.getElementById('forgot-err2').textContent='שגיאה: '+e.message;}
+}
+
+async function resetPassword(){
+  const np=document.getElementById('f-newpass').value;
+  const np2=document.getElementById('f-newpass2').value;
+  if(np.length<6){document.getElementById('forgot-err3').textContent='הסיסמה חייבת להכיל לפחות 6 תווים';return;}
+  if(np!==np2){document.getElementById('forgot-err3').textContent='הסיסמאות לא תואמות';return;}
+  try{
+    const hashed=await hashPassword(np);
+    await db('profiles','PATCH',{password:hashed},`?id=eq.${encId(forgotUserId)}`);
+    alert('✅ הסיסמה שונתה בהצלחה! כעת תוכל להתחבר.');
+    switchTab('login');
+  }catch(e){document.getElementById('forgot-err3').textContent='שגיאה: '+e.message;}
 }
 
 function togglePass(id,btn){
@@ -295,12 +399,16 @@ async function doLogin(){
       if(!name||!address){setErr('נא למלא שם מלא וכתובת');btn.textContent='הרשמה';btn.disabled=false;return;}
       if(pass!==pass2){setErr('הסיסמאות לא תואמות');btn.textContent='הרשמה';btn.disabled=false;return;}
 
+      const secq=document.getElementById('l-secq').value;
+      const seca=document.getElementById('l-seca').value.trim().toLowerCase();
+      if(!secq||!seca){setErr('נא לבחור שאלת אבטחה ולמלא תשובה');btn.textContent='הרשמה';btn.disabled=false;return;}
+
       const existing=await db('profiles','GET',null,`?id=eq.${encId(id)}`);
       if(existing.length){setErr('שם משתמש תפוס, בחר אחר');btn.textContent='הרשמה';btn.disabled=false;return;}
 
       const lat=30.8+Math.random()*2.6;
       const lng=34.4+Math.random()*1.2;
-      const res=await db('profiles','POST',{id,name,address,bio,lat,lng,password:hashedPass});
+      const res=await db('profiles','POST',{id,name,address,bio,lat,lng,password:hashedPass,security_question:secq,security_answer:seca});
       currentUser=res[0];
 
     } else {
