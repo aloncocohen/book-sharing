@@ -95,8 +95,12 @@ hr{border:none;border-top:1px solid #e5e2db;margin:10px 0}
         <div id="register-fields" style="display:none">
           <label style="font-size:12px;color:#888">שם מלא</label>
           <input id="l-name" placeholder="השם שיופיע לאחרים">
-          <label style="font-size:12px;color:#888">כתובת מגורים</label>
-          <input id="l-address" placeholder="עיר, רחוב ומספר">
+          <label style="font-size:12px;color:#888">עיר *</label>
+          <input id="l-city" placeholder="עיר מגורים">
+          <label style="font-size:12px;color:#888">שכונה *</label>
+          <input id="l-neighborhood" placeholder="שכונה">
+          <label style="font-size:12px;color:#888">רחוב ומספר <span style="color:#bbb">(אופציונלי)</span></label>
+          <input id="l-street" placeholder="רחוב ומספר בית — לא חובה">
           <label style="font-size:12px;color:#888">קצת עלייך (אופציונלי)</label>
           <textarea id="l-bio" placeholder="אהבות קריאה, ז'אנרים מועדפים..."></textarea>
           <label style="font-size:12px;color:#888">שאלת אבטחה</label>
@@ -405,11 +409,13 @@ async function doLogin(){
 
     if(isRegister){
       const name=document.getElementById('l-name').value.trim();
-      const address=document.getElementById('l-address').value.trim();
+      const city=document.getElementById('l-city').value.trim();
+      const neighborhood=document.getElementById('l-neighborhood').value.trim();
+      const street=document.getElementById('l-street').value.trim();
       const bio=document.getElementById('l-bio').value.trim();
       const pass2=document.getElementById('l-pass2').value;
 
-      if(!name||!address){setErr('נא למלא שם מלא וכתובת');btn.textContent='הרשמה';btn.disabled=false;return;}
+      if(!name||!city||!neighborhood){setErr('נא למלא שם מלא, עיר ושכונה');btn.textContent='הרשמה';btn.disabled=false;return;}
       if(pass!==pass2){setErr('הסיסמאות לא תואמות');btn.textContent='הרשמה';btn.disabled=false;return;}
 
       const secq=document.getElementById('l-secq').value;
@@ -419,9 +425,11 @@ async function doLogin(){
       const existing=await db('profiles','GET',null,`?id=eq.${encId(id)}`);
       if(existing.length){setErr('שם משתמש תפוס, בחר אחר');btn.textContent='הרשמה';btn.disabled=false;return;}
 
+      // כתובת לתצוגה — רחוב אופציונלי
+      const address=street?`${street}, ${neighborhood}, ${city}`:`${neighborhood}, ${city}`;
       const lat=30.8+Math.random()*2.6;
       const lng=34.4+Math.random()*1.2;
-      const res=await db('profiles','POST',{id,name,address,bio,lat,lng,password:hashedPass,security_question:secq,security_answer:seca});
+      const res=await db('profiles','POST',{id,name,address,city,neighborhood,bio,lat,lng,password:hashedPass,security_question:secq,security_answer:seca});
       currentUser=res[0];
 
     } else {
@@ -606,13 +614,21 @@ function renderProfile(){
 
 function showEditProfile(){
   const p=currentUser;
+  const parts=(p.address||'').split(',').map(s=>s.trim());
+  const city=p.city||parts[parts.length-1]||'';
+  const neighborhood=p.neighborhood||parts[parts.length-2]||'';
+  const street=p.street||parts[0]||'';
   document.getElementById('edit-area').innerHTML=`
     <div class="card">
       <div style="font-weight:700;margin-bottom:12px">✏️ ערוך פרופיל</div>
       <label style="font-size:12px;color:#888">שם מלא</label>
       <input id="e-name" value="${p.name}">
-      <label style="font-size:12px;color:#888">כתובת</label>
-      <input id="e-addr" value="${p.address}">
+      <label style="font-size:12px;color:#888">עיר *</label>
+      <input id="e-city" value="${city}" placeholder="עיר מגורים">
+      <label style="font-size:12px;color:#888">שכונה *</label>
+      <input id="e-neighborhood" value="${neighborhood}" placeholder="שכונה">
+      <label style="font-size:12px;color:#888">רחוב ומספר <span style="color:#bbb">(אופציונלי)</span></label>
+      <input id="e-street" value="${street}" placeholder="רחוב ומספר בית — לא חובה">
       <label style="font-size:12px;color:#888">קצת עלייך</label>
       <textarea id="e-bio">${p.bio||''}</textarea>
       <hr style="margin-bottom:12px">
@@ -637,18 +653,22 @@ function showEditProfile(){
 
 async function saveProfile(){
   const name=document.getElementById('e-name').value.trim()||currentUser.name;
-  const address=document.getElementById('e-addr').value.trim()||currentUser.address;
+  const city=document.getElementById('e-city').value.trim();
+  const neighborhood=document.getElementById('e-neighborhood').value.trim();
+  const street=document.getElementById('e-street').value.trim();
+  if(!city||!neighborhood){document.getElementById('edit-err').textContent='נא למלא עיר ושכונה';return;}
+  const address=street?`${street}, ${neighborhood}, ${city}`:`${neighborhood}, ${city}`;
   const bio=document.getElementById('e-bio').value.trim();
   const newPass=document.getElementById('e-pass').value;
   const newPass2=document.getElementById('e-pass2').value;
-  let updateObj={name,address,bio};
+  let updateObj={name,address,city,neighborhood,bio};
   if(newPass){
     if(newPass.length<6){document.getElementById('edit-err').textContent='הסיסמה חייבת להכיל לפחות 6 תווים';return;}
     if(newPass!==newPass2){document.getElementById('edit-err').textContent='הסיסמאות לא תואמות';return;}
     updateObj.password=await hashPassword(newPass);
   }
   await db('profiles','PATCH',updateObj,`?id=eq.${encId(currentUser.id)}`);
-  currentUser={...currentUser,name,address,bio};
+  currentUser={...currentUser,name,address,city,neighborhood,bio};
   await loadAll();
   renderProfile();
   document.getElementById('welcome-msg').textContent='שלום, '+currentUser.name+' 👋';
@@ -932,17 +952,45 @@ async function sendCounter(id,toUser,book,type){
   updateNotif();
 }
 
+let mapFilter='city'; // 'city' או 'neighborhood'
+let mapFilterValue='';
+
 function renderMap(){
   const el=document.getElementById('map-view');
+
+  // איסוף ערים ושכונות ייחודיות
+  const cities=[...new Set(allProfiles.map(p=>p.city||'').filter(Boolean))].sort();
+  const neighborhoods=[...new Set(allProfiles.map(p=>p.neighborhood||'').filter(Boolean))].sort();
+
+  // פילטור לפי בחירה
+  let filtered=allProfiles;
+  if(mapFilterValue){
+    if(mapFilter==='city') filtered=allProfiles.filter(p=>p.city===mapFilterValue);
+    else filtered=allProfiles.filter(p=>p.neighborhood===mapFilterValue);
+  }
+
   const minLat=30.6,maxLat=33.4,minLng=34.3,maxLng=35.7;
   const W=340,H=240;
   function px(lng){return Math.round(((lng-minLng)/(maxLng-minLng))*W);}
   function py(lat){return Math.round(H-((lat-minLat)/(maxLat-minLat))*H);}
-  const dots=allProfiles.map(p=>({p,x:px(p.lng||34.8),y:py(p.lat||32.0),c:gc(p.id)}));
+  const dots=filtered.map(p=>({p,x:px(p.lng||34.8),y:py(p.lat||32.0),c:gc(p.id)}));
 
   el.innerHTML=`
     <div class="card">
       <div style="font-weight:700;margin-bottom:10px">🗺️ מפת המשתמשים</div>
+
+      <!-- טאבים -->
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <button class="chip ${mapFilter==='city'?'selected':''}" onclick="setMapFilter('city','')">🏙️ לפי עיר</button>
+        <button class="chip ${mapFilter==='neighborhood'?'selected':''}" onclick="setMapFilter('neighborhood','')">🏘️ לפי שכונה</button>
+      </div>
+
+      <!-- בחירת עיר / שכונה -->
+      <select onchange="setMapFilter('${mapFilter}',this.value)" style="margin-bottom:10px">
+        <option value="">-- כל ${mapFilter==='city'?'הערים':'השכונות'} --</option>
+        ${(mapFilter==='city'?cities:neighborhoods).map(v=>`<option value="${v}" ${mapFilterValue===v?'selected':''}>${v}</option>`).join('')}
+      </select>
+
       <div class="map-wrap">
         <svg width="100%" height="240" viewBox="0 0 ${W} ${H}" style="position:absolute;inset:0">
           <rect width="${W}" height="${H}" fill="#d4e9c8"/>
@@ -953,8 +1001,8 @@ function renderMap(){
         </svg>
       </div>
       <div id="map-books-detail"></div>
-      <div class="section-title" style="margin-top:10px">כל המשתמשים (${allProfiles.length})</div>
-      ${allProfiles.map(p=>{
+      <div class="section-title" style="margin-top:10px">משתמשים (${filtered.length})</div>
+      ${filtered.map(p=>{
         const c=gc(p.id);
         const av=p.name.split(' ').map(w=>w[0]).join('').slice(0,2);
         const books=getBooksOf(p.id);
@@ -968,6 +1016,12 @@ function renderMap(){
         </div>`;
       }).join('')}
     </div>`;
+}
+
+function setMapFilter(type, value){
+  mapFilter=type;
+  mapFilterValue=value;
+  renderMap();
 }
 
 function mapClick(profId){
